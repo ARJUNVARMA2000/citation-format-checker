@@ -109,12 +109,13 @@ GOLDEN_EXAMPLES = [
         "name": "chicago_bibliography",
         "style": "chicago",
         "input": (
-            "Bibliography: Smith, John. Introduction to Statistics. "
+            "Bibliography: John Smith. Introduction to Statistics. "
             "New York: Norton, 2020."
         ),
         "reference": (
-            "CHI-B2: In bibliography, first author is Last, First — "
-            "Smith, John. Correct book format with place, publisher, year."
+            "CHI-B2: In bibliography, invert the first author to Last, First — "
+            "use Smith, John. The rest of the book entry format (place, "
+            "publisher, year) is otherwise correct."
         ),
     },
 ]

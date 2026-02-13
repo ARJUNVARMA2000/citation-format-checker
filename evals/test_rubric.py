@@ -17,8 +17,8 @@ RUBRIC = json.dumps(
             "weight": 3,
         },
         {
-            "title": "Analysis only — does not rewrite",
-            "description": "Essential: response points out errors and does not rewrite the user's citations or reference list.",
+            "title": "No full rewrites; brief corrections allowed",
+            "description": "Essential: response does not rewrite the full user passage/reference list, but may provide short corrected examples for specific violations.",
             "weight": 5,
         },
         {
