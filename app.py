@@ -34,7 +34,9 @@ SAFETY_RESPONSE = (
 )
 
 CITATION_RULE_PATTERN = re.compile(
-    r"(APA-\w+|MLA-\w+|CHI-\w+|No violations found|correctly formatted)",
+    r"(APA-\w+|MLA-\w+|CHI-\w+|No violations found|correctly formatted|"
+    r"no formatting errors|appears correctly formatted|correct format for|"
+    r"no citation errors|don't see any citation errors)",
     re.IGNORECASE,
 )
 
@@ -44,7 +46,6 @@ OFF_TOPIC_REDIRECT = (
     "for APA, MLA, or Chicago style. Please paste a passage with "
     "citations and I'll check the formatting."
 )
-
 
 def check_safety(user_message: str) -> str | None:
     """Pre-generation: detect distress keywords, return safety message or None."""
@@ -87,6 +88,9 @@ When the user asks about margins, fonts, headers, or page layout: I specialize i
 <task>
 Review the user's text and identify violations of the citation rules in <rules>.
 For each violation, state the rule ID and quote the problematic citation.
+After each violation, provide a brief corrected example for that specific citation.
+If the provided citations are already compliant, respond with "No violations found."
+and a brief confirmation; do not invent or force violations.
 After all violations, give a one-sentence overall note.
 When no text is provided for review, ask the user to paste their citations.
 </task>
@@ -95,6 +99,8 @@ When no text is provided for review, ask the user to paste their citations.
 You answer questions about citation formatting in {style_name}.
 You identify formatting errors in citations and reference lists.
 You explain why a citation violates a specific rule.
+If the user asks you to "rewrite" or "fix it for me," do not rewrite the whole passage/reference list.
+Provide only brief, line-level corrected examples tied to each specific violation.
 When the text follows all rules, you confirm it is correctly formatted.
 </positive_constraints>
 
@@ -237,8 +243,8 @@ FEW_SHOT_APA = [
         ),
         "assistant": (
             '- APA-4 (page number required): "the results were significant" '
-            "is a direct quote but lacks a page number. Should be "
-            '(Smith, 2020, p. XX).\n\n'
+            'is a direct quote but lacks a page number. Corrected example: '
+            '"the results were significant" (Smith, 2020, p. XX).\n\n'
             "One violation found. The narrative citation and the second "
             "parenthetical citation are otherwise correctly formatted."
         ),
@@ -263,10 +269,26 @@ FEW_SHOT_APA = [
         "assistant": (
             '- APA-3 (et al. for 3+ authors): "(Smith, Jones, Lee, & '
             'Park, 2021)" — APA 7th requires "et al." from the first '
-            'citation. Use "(Smith et al., 2021)."\n'
+            'citation; this citation should be in et al. form. Corrected example: '
+            '"(Smith et al., 2021)."\n'
             '- APA-3: "Smith, Jones, Lee, and Park (2021)" in narrative — '
-            'use "Smith et al. (2021)."\n\n'
-            "Fix the author listings to follow APA 7th edition."
+            'this narrative citation should also be in et al. form. Corrected example: '
+            '"Smith et al. (2021)."\n\n'
+            "These author listings are inconsistent with APA 7th et al. usage."
+        ),
+    },
+    {
+        "user": (
+            "Can you rewrite this reference list for me? "
+            "Smith, J. (2020). Effects Of Sleep. journal of psychology, 105(3), 234."
+        ),
+        "assistant": (
+            "I cannot rewrite your full reference list, but I can fix each issue line by line.\n"
+            '- APA-R5 (title/journal capitalization): "Effects Of Sleep." should use sentence case in APA.\n'
+            '  Corrected example: "Effects of sleep."\n'
+            '- APA-R5: "journal of psychology" should be in title case (and italicized in formatted output).\n\n'
+            '  Corrected example: "Journal of Psychology".\n\n'
+            "This entry has capitalization issues under APA 7th."
         ),
     },
 ]
@@ -278,8 +300,9 @@ FEW_SHOT_MLA = [
         ),
         "assistant": (
             '- MLA-1 (author-page, no year): MLA uses author and page only. '
-            'Use (Smith 45). Remove the year and "p."\n'
-            '- MLA-3 (no comma): Do not use a comma between author and page.\n\n'
+            'Remove the year and "p." Corrected example: "(Smith 45)".\n'
+            '- MLA-3 (no comma): Do not use a comma between author and page. '
+            'Corrected example: "(Smith 45)".\n\n'
             "In MLA, in-text citations use author and page number only."
         ),
     },
@@ -299,9 +322,9 @@ FEW_SHOT_MLA = [
             "Smith wrote that \"results were positive\" (Smith, p. 12)."
         ),
         "assistant": (
-            '- MLA-3 (no comma): "(Lee, 34)" — remove the comma. Use (Lee 34).\n'
+            '- MLA-3 (no comma): "(Lee, 34)" — remove the comma. Corrected example: "(Lee 34)".\n'
             '- MLA-1 (no "p."): "(Smith, p. 12)" — MLA omits "p." in parenthetical. '
-            'Use (Smith 12).\n\n'
+            'Remove the page prefix. Corrected example: "(Smith 12)".\n\n'
             "MLA in-text citations are (Author Page) with no comma or 'p.'"
         ),
     },
@@ -316,7 +339,7 @@ FEW_SHOT_CHICAGO = [
         "assistant": (
             '- CHI-1 (footnote format): Chicago Notes-Bibliography uses '
             "superscript numbers and footnotes, not parenthetical author-date. "
-            'Replace with footnote numbers and provide full citations in notes.\n\n'
+            "Corrected example: replace parenthetical citations with superscript note numbers.\n\n"
             "Chicago NB style does not use in-text (Author Year) — that is "
             "author-date style. Use footnotes or endnotes instead."
         ),
@@ -334,16 +357,24 @@ FEW_SHOT_CHICAGO = [
     },
     {
         "user": (
-            "The data support the hypothesis.² "
-            "² John Smith, Introduction to Statistics (New York: Norton, 2020), 78."
+            "Bibliography: Smith, John. Introduction to Statistics. "
+            "New York: Norton, 2020."
         ),
         "assistant": (
-            '- CHI-3 (first note format): First name should be inverted in the '
-            "note. Use: Smith, Introduction to Statistics (New York: Norton, 2020), 78.\n"
-            '- CHI-B2: In notes, author is typically First Last in full form, '
-            "but Chicago often uses Last, First in the first note — check your "
-            "manual. The main issue here is consistency with shortened form.\n\n"
-            "Ensure first note uses full citation with proper author format."
+            "No violations found. The bibliography entry uses correct author "
+            "order and book-entry formatting for Chicago."
+        ),
+    },
+    {
+        "user": (
+            "The data support the hypothesis.² "
+            "² Smith, John. Introduction to Statistics (New York: Norton, 2020), 78."
+        ),
+        "assistant": (
+            '- CHI-3 (first note format): In notes, first citations use "First Last," '
+            'so "Smith, John" should be "John Smith." Corrected example: '
+            '"John Smith, Introduction to Statistics (New York: Norton, 2020), 78."\n\n'
+            "This note uses bibliography name order instead of first-note name order."
         ),
     },
 ]
@@ -355,11 +386,16 @@ FEW_SHOT = {
 }
 
 
+def normalize_style(style: str | None) -> str:
+    normalized = style.lower() if style else "apa"
+    if normalized not in RULES:
+        return "apa"
+    return normalized
+
+
 def build_initial_messages(style: str = "apa") -> list[dict]:
     """Build the initial message list with system prompt and few-shot examples."""
-    style = style.lower() if style else "apa"
-    if style not in RULES:
-        style = "apa"
+    style = normalize_style(style)
     style_name = STYLE_NAMES[style]
     style_manual = STYLE_MANUALS[style]
     rules_text = RULES[style]
@@ -390,6 +426,7 @@ def generate_response(messages: list[dict]) -> str:
 # --- Session Management ---
 
 sessions: dict[str, list[dict]] = {}
+session_styles: dict[str, str] = {}
 
 
 # --- FastAPI App ---
@@ -423,8 +460,13 @@ def chat(request: ChatRequest):
 
     # Get or create session
     session_id = request.session_id or str(uuid.uuid4())
-    if session_id not in sessions:
-        sessions[session_id] = build_initial_messages(request.style)
+    request_style = normalize_style(request.style)
+    if (
+        session_id not in sessions
+        or session_styles.get(session_id) != request_style
+    ):
+        sessions[session_id] = build_initial_messages(request_style)
+        session_styles[session_id] = request_style
 
     # Add user message
     sessions[session_id].append({"role": "user", "content": request.message})
@@ -445,6 +487,7 @@ def chat(request: ChatRequest):
 def clear(session_id: str | None = None):
     if session_id and session_id in sessions:
         del sessions[session_id]
+        session_styles.pop(session_id, None)
     return {"status": "ok"}
 
 

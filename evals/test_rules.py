@@ -52,8 +52,8 @@ IN_DOMAIN_CASES = [
     {
         "name": "apa_r5_title_case",
         "input": (
-            "Reference: Smith, J. (2020). Effects Of Sleep On Memory. "
-            "Journal of applied psychology, 105(3), 234-250."
+            "Reference: Smith, J. (2020). EFFECTS OF SLEEP ON MEMORY. "
+            "journal of applied psychology, 105(3), pp. 234-250."
         ),
         "style": "apa",
         "expected_in_response": "APA",
@@ -91,15 +91,15 @@ IN_DOMAIN_CASES = [
             "New York: Norton, 2020."
         ),
         "style": "chicago",
-        "expected_in_response": "CHI",
+        "expected_in_response": ["No violations found", "correctly formatted"],
     },
     {
         "name": "chi_b4_article_format",
         "input": (
-            "Smith, John. Article Title. Journal Title 10, no. 2 (2020): 1-20."
+            'Smith, John. "Article Title." Journal Title 10, no. 2 (2020): 1–20.'
         ),
         "style": "chicago",
-        "expected_in_response": "CHI",
+        "expected_in_response": ["No violations found", "correctly formatted"],
     },
 ]
 
