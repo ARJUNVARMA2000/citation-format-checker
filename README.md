@@ -11,6 +11,66 @@ Paste a citation, get rule-by-rule feedback and a corrected version you can copy
 
 If the citation is already correct, the bot simply confirms: "No violations found."
 
+## Architecture
+
+```
+                         ┌─────────────────────────────┐
+                         │      Browser (index.html)    │
+                         │  Style picker + text input   │
+                         └──────────┬──────────────────┘
+                                    │ POST /chat
+                                    ▼
+                         ┌──────────────────────────────┐
+                         │        FastAPI (app.py)       │
+                         │                              │
+                         │  1. check_safety()           │
+                         │     ┌──────────────────────┐ │
+                         │     │ Distress keywords?   │ │
+                         │     │  YES ──► citation    │ │
+                         │     │         context?     │ │
+                         │     │         NO ──► 988   │ │
+                         │     │               msg    │ │
+                         │     │         YES ──►      │ │
+                         │     │          continue    │ │
+                         │     │  NO ──► continue     │ │
+                         │     └──────────────────────┘ │
+                         │                              │
+                         │  2. build_initial_messages()  │
+                         │     ┌──────────────────────┐ │
+                         │     │ System prompt (XML)  │ │
+                         │     │  + role/persona      │ │
+                         │     │  + scope & rules     │ │
+                         │     │  + positive constr.  │ │
+                         │     │  + escape hatch      │ │
+                         │     │ Few-shot examples    │ │
+                         │     │  (3-4 per style)     │ │
+                         │     │ Session history      │ │
+                         │     └──────────────────────┘ │
+                         │               │              │
+                         │               ▼              │
+                         │     ┌──────────────────────┐ │
+                         │     │   LiteLLM → Gemini   │ │
+                         │     │   2.0 Flash Lite     │ │
+                         │     └──────────┬───────────┘ │
+                         │               │              │
+                         │               ▼              │
+                         │  3. check_response()         │
+                         │     ┌──────────────────────┐ │
+                         │     │ Contains rule IDs /  │ │
+                         │     │ citation language?   │ │
+                         │     │  YES ──► return      │ │
+                         │     │  NO  ──► redirect    │ │
+                         │     │          message     │ │
+                         │     └──────────────────────┘ │
+                         └──────────┬───────────────────┘
+                                    │ JSON response
+                                    ▼
+                         ┌─────────────────────────────┐
+                         │      Browser renders         │
+                         │      formatted feedback      │
+                         └─────────────────────────────┘
+```
+
 ## Example
 
 **Input** (APA 7th):
@@ -43,6 +103,27 @@ VERTEXAI_PROJECT=your-project-id
 VERTEXAI_LOCATION=us-central1
 ```
 
+## Prompting strategy
+
+The system prompt is built dynamically per style and uses structured XML tags for clarity.
+
+- **Role / persona**: The bot is an "expert citation format reviewer" with a precise, collegial tone aimed at students formatting academic papers.
+- **Few-shot examples**: 3-4 examples per style (APA, MLA, Chicago) covering violation detection, correct-citation confirmation, and corrected-citation output. Examples are statically defined and injected into the conversation as user/assistant turns.
+- **Positive constraints**: The `<positive_constraints>` block defines what the bot *can* do — identify formatting errors, explain rule violations, and provide corrected citations. Scope is limited to citation formatting only.
+- **Escape hatch**: When the bot encounters an ambiguous edge case, it says: *"I'm not certain about this case — I'd recommend checking the [style manual] for guidance."*
+
+## Out-of-scope handling
+
+Three out-of-scope categories are defined using positive framing in the `<scope>` block:
+
+1. **Grammar / writing quality** — "I focus on citation formatting; for grammar and style feedback, a writing tutor or tool like Grammarly is a better fit."
+2. **Source quality / research methodology** — "I review how sources are cited, not whether they are good sources; for research quality, consult your advisor."
+3. **Page layout (margins, fonts, headers)** — "I specialize in citations and references; for page layout and formatting, check your style manual's formatting chapter."
+
+**Python backstop (post-generation):** After every LLM response, a regex check (`check_response`) verifies the output contains citation-related content (rule IDs, "No violations found", "Corrected citation", etc.). If the LLM went off-topic, the response is replaced with a redirect message.
+
+**Safety handling (pre-generation):** Before calling the LLM, `check_safety` scans for distress keywords (e.g. "suicide", "self-harm", "hopeless"). If detected, the LLM is skipped entirely and a crisis-resource message is returned (988 Suicide & Crisis Lifeline, Crisis Text Line). The filter is context-aware — academic citations containing sensitive terms (e.g. a study on suicide prevention) are recognized by citation signals (parenthetical years, author patterns, DOIs) and allowed through for normal review.
+
 ## Supported styles
 
 | Style | Edition | Coverage |
@@ -53,7 +134,15 @@ VERTEXAI_LOCATION=us-central1
 
 ## Evaluation
 
-The bot is evaluated with a three-tier harness:
+### Golden dataset (20+ cases)
+
+| Category | Count | What's tested |
+|----------|-------|---------------|
+| **In-domain** | 10 | Citations with known violations across APA, MLA, and Chicago — each paired with an expected answer |
+| **Out-of-scope** | 5 | Grammar help, source evaluation, page layout, essay requests, font questions — expect redirect/refusal |
+| **Adversarial / safety** | 6 | Distress-keyword trigger, prompt injection, role confusion, jailbreak, off-domain question, citation-with-sensitive-term bypass |
+
+### Three-tier harness
 
 | Tier | Method | What it checks |
 |------|--------|----------------|
@@ -71,6 +160,6 @@ uv run pytest evals/ -v
 
 | Eval | Pass rate | Average score |
 |------|-----------|---------------|
-| Deterministic rules | 20/20 | — |
+| Deterministic rules | 21/21 | — |
 | Golden reference (MaaJ) | 10/10 | 9.9/10 |
 | Rubric (MaaJ) | 11/11 | 9.8/10 |
