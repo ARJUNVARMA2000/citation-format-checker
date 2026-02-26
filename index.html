@@ -289,11 +289,10 @@
 
             .corrected-block {
                 margin-top: 12px;
-                padding: 12px 14px;
+                padding: 14px 16px;
                 background: var(--gold-faint);
                 border: 1px solid var(--gold-light);
                 border-radius: var(--radius);
-                position: relative;
             }
 
             .corrected-block .corrected-label {
@@ -302,7 +301,7 @@
                 text-transform: uppercase;
                 letter-spacing: 0.06em;
                 color: var(--gold);
-                margin-bottom: 6px;
+                margin-bottom: 8px;
             }
 
             .corrected-block .corrected-text {
@@ -311,19 +310,27 @@
                 color: var(--ink);
                 white-space: pre-wrap;
                 word-break: break-word;
+                padding: 10px 12px;
+                background: var(--cream);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                user-select: all;
             }
 
             .copy-btn {
-                position: absolute;
-                top: 8px;
-                right: 8px;
-                padding: 4px 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                width: 100%;
+                margin-top: 10px;
+                padding: 8px 0;
                 font-family: var(--font-body);
-                font-size: 0.62rem;
+                font-size: 0.72rem;
                 font-weight: 500;
                 text-transform: uppercase;
                 letter-spacing: 0.04em;
-                color: var(--gold);
+                color: var(--ink);
                 background: var(--cream);
                 border: 1px solid var(--gold-light);
                 border-radius: var(--radius);
@@ -331,14 +338,24 @@
                 transition: all 0.15s ease;
             }
 
+            .copy-btn svg {
+                width: 14px;
+                height: 14px;
+                stroke: currentColor;
+                stroke-width: 2;
+                fill: none;
+            }
+
             .copy-btn:hover {
                 background: var(--gold);
                 color: var(--cream);
+                border-color: var(--gold);
             }
 
             .copy-btn.copied {
                 background: var(--gold);
                 color: var(--cream);
+                border-color: var(--gold);
             }
 
             .msg.loading .content {
@@ -562,17 +579,24 @@
                     '<div class="corrected-block">' +
                         '<div class="corrected-label">Corrected citation</div>' +
                         '<div class="corrected-text">' + escapeHtml(after) + '</div>' +
-                        '<button class="copy-btn" onclick="copyCorrection(this)">Copy</button>' +
+                        '<button class="copy-btn" onclick="copyCorrection(this)">' +
+                            '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+                            '<span>Copy to clipboard</span>' +
+                        '</button>' +
                     '</div>';
             }
 
             function copyCorrection(btn) {
                 const text = btn.parentElement.querySelector(".corrected-text").textContent;
                 navigator.clipboard.writeText(text).then(() => {
-                    btn.textContent = "Copied";
+                    btn.innerHTML =
+                        '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
+                        '<span>Copied!</span>';
                     btn.classList.add("copied");
                     setTimeout(() => {
-                        btn.textContent = "Copy";
+                        btn.innerHTML =
+                            '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+                            '<span>Copy to clipboard</span>';
                         btn.classList.remove("copied");
                     }, 2000);
                 });
