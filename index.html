@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Citation Format Checker</title>
+        <title>Citation Correction Bot</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
@@ -287,6 +287,60 @@
                 border-left: 2.5px solid var(--gold);
             }
 
+            .corrected-block {
+                margin-top: 12px;
+                padding: 12px 14px;
+                background: var(--gold-faint);
+                border: 1px solid var(--gold-light);
+                border-radius: var(--radius);
+                position: relative;
+            }
+
+            .corrected-block .corrected-label {
+                font-size: 0.65rem;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: var(--gold);
+                margin-bottom: 6px;
+            }
+
+            .corrected-block .corrected-text {
+                font-size: 0.85rem;
+                line-height: 1.6;
+                color: var(--ink);
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+
+            .copy-btn {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                padding: 4px 10px;
+                font-family: var(--font-body);
+                font-size: 0.62rem;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: var(--gold);
+                background: var(--cream);
+                border: 1px solid var(--gold-light);
+                border-radius: var(--radius);
+                cursor: pointer;
+                transition: all 0.15s ease;
+            }
+
+            .copy-btn:hover {
+                background: var(--gold);
+                color: var(--cream);
+            }
+
+            .copy-btn.copied {
+                background: var(--gold);
+                color: var(--cream);
+            }
+
             .msg.loading .content {
                 color: var(--ink-muted);
                 font-style: italic;
@@ -402,7 +456,7 @@
     <body>
         <div id="container">
             <div id="top-bar">
-                <h1>Citation<span>.</span> Checker</h1>
+                <h1>Citation<span>.</span> Corrector</h1>
                 <div class="style-switcher">
                     <button class="style-btn active" data-style="apa">APA 7th</button>
                     <button class="style-btn" data-style="mla">MLA 9th</button>
@@ -419,14 +473,14 @@
                         <path d="M8 7h6" />
                         <path d="M8 11h8" />
                     </svg>
-                    <p>Paste your citations to begin</p>
+                    <p>Paste your citations to get corrections</p>
                 </div>
             </div>
             <div id="input-area">
                 <input
                     type="text"
                     id="user-input"
-                    placeholder="Paste citations or a reference list..."
+                    placeholder="Paste a citation or reference entry to correct..."
                     autocomplete="off"
                 />
                 <button id="send-btn">Check</button>
@@ -444,19 +498,19 @@
 
             const EXAMPLES = {
                 apa: [
-                    { label: "Missing page number", text: 'According to Smith (2020), "the results were significant" and the study confirmed earlier findings (Jones & Lee, 2019).' },
-                    { label: "Too many authors", text: 'The research (Smith, Jones, Lee, & Park, 2021) showed that "cognitive load theory explains most variance."' },
-                    { label: "Correct citations", text: "Smith and Jones (2020) found that sleep deprivation impairs memory. This aligns with earlier work (Lee et al., 2018)." },
+                    { label: "Fix missing page number", text: 'According to Smith (2020), "the results were significant" and the study confirmed earlier findings (Jones & Lee, 2019).' },
+                    { label: "Fix et al. usage", text: 'The research (Smith, Jones, Lee, & Park, 2021) showed that "cognitive load theory explains most variance."' },
+                    { label: "Fix reference capitalization", text: "Smith, J. (2020). Effects Of Sleep. journal of psychology, 105(3), 234." },
                 ],
                 mla: [
-                    { label: "Year & comma errors", text: "Smith argues that memory declines with age (Smith, 2020, p. 45)." },
-                    { label: "Comma + p. errors", text: 'According to Lee, the effect was significant (Lee, 34). Smith wrote that "results were positive" (Smith, p. 12).' },
-                    { label: "Correct citations", text: "Recent studies confirm this (Jones 22). The data show a clear trend (Jones 22)." },
+                    { label: "Fix year & comma errors", text: "Smith argues that memory declines with age (Smith, 2020, p. 45)." },
+                    { label: "Fix comma + p. errors", text: 'According to Lee, the effect was significant (Lee, 34). Smith wrote that "results were positive" (Smith, p. 12).' },
+                    { label: "Fix Works Cited entry", text: "Works Cited: John Smith. How to Cite. Penguin, 2020." },
                 ],
                 chicago: [
-                    { label: "Parenthetical instead of footnote", text: "The study found strong effects (Smith 2020, 45). Later work confirmed this (Jones 2019)." },
-                    { label: "Shortened note form", text: 'Smith argues that the method was flawed.\u00B9 \u00B9Smith, Research Methods, 45.' },
-                    { label: "Full first note", text: 'The data support the hypothesis.\u00B2 \u00B2 John Smith, Introduction to Statistics (New York: Norton, 2020), 78.' },
+                    { label: "Fix parenthetical to footnote", text: "The study found strong effects (Smith 2020, 45). Later work confirmed this (Jones 2019)." },
+                    { label: "Fix note name order", text: 'The data support the hypothesis.\u00B2 \u00B2 Smith, John. Introduction to Statistics (New York: Norton, 2020), 78.' },
+                    { label: "Fix bibliography author", text: "Bibliography: John Smith. Introduction to Statistics. New York: Norton, 2020." },
                 ],
             };
 
@@ -492,6 +546,38 @@
                 if (empty) empty.remove();
             }
 
+            function escapeHtml(str) {
+                return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            }
+
+            function formatResponse(text) {
+                const marker = "Corrected citation:";
+                const idx = text.toLowerCase().indexOf(marker.toLowerCase());
+                if (idx === -1) return escapeHtml(text);
+
+                const before = text.substring(0, idx).trim();
+                const after = text.substring(idx + marker.length).trim();
+
+                return escapeHtml(before) +
+                    '<div class="corrected-block">' +
+                        '<div class="corrected-label">Corrected citation</div>' +
+                        '<div class="corrected-text">' + escapeHtml(after) + '</div>' +
+                        '<button class="copy-btn" onclick="copyCorrection(this)">Copy</button>' +
+                    '</div>';
+            }
+
+            function copyCorrection(btn) {
+                const text = btn.parentElement.querySelector(".corrected-text").textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.textContent = "Copied";
+                    btn.classList.add("copied");
+                    setTimeout(() => {
+                        btn.textContent = "Copy";
+                        btn.classList.remove("copied");
+                    }, 2000);
+                });
+            }
+
             function addMessage(role, text, isLoading = false) {
                 clearEmptyState();
                 const div = document.createElement("div");
@@ -501,9 +587,9 @@
                     (isLoading ? " loading" : "");
                 div.innerHTML =
                     '<div class="role">' +
-                    (role === "you" ? "You" : "Checker") +
+                    (role === "you" ? "You" : "Corrector") +
                     '</div><div class="content">' +
-                    text +
+                    escapeHtml(text) +
                     "</div>";
                 messages.appendChild(div);
                 messages.scrollTop = messages.scrollHeight;
@@ -536,8 +622,8 @@
                     });
                     const data = await res.json();
                     sessionId = data.session_id;
-                    loading.querySelector(".content").textContent =
-                        data.response;
+                    loading.querySelector(".content").innerHTML =
+                        formatResponse(data.response);
                     loading.classList.remove("loading");
                 } catch (e) {
                     loading.querySelector(".content").textContent =

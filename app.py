@@ -33,10 +33,31 @@ SAFETY_RESPONSE = (
     "You are not alone."
 )
 
+# Patterns that indicate the message is an academic citation / reference,
+# not a personal distress message.  When these appear alongside a safety
+# keyword the safety gate is skipped so the citation can be reviewed normally.
+CITATION_CONTEXT_PATTERNS = [
+    # Parenthetical year — (2023), (2019), (n.d.)
+    re.compile(r"\(\s*\d{4}\s*\)"),
+    re.compile(r"\(\s*n\.d\.\s*\)", re.IGNORECASE),
+    # "vol.", "pp.", "doi:", "http://", "https://"
+    re.compile(r"\b(vol\.|pp\.|doi:|https?://)", re.IGNORECASE),
+    # Common reference list markers — Journal of …, et al.,
+    re.compile(r"\bet\s+al\.", re.IGNORECASE),
+    re.compile(r"\bjournal\s+of\b", re.IGNORECASE),
+    # Author-date patterns — Smith, J. or Smith, John
+    re.compile(r"[A-Z][a-z]+,\s+[A-Z]\."),
+    # Explicit citation-check requests
+    re.compile(
+        r"\b(check|format|cite|citation|reference|bibliography|apa|mla|chicago)\b",
+        re.IGNORECASE,
+    ),
+]
+
 CITATION_RULE_PATTERN = re.compile(
     r"(APA-\w+|MLA-\w+|CHI-\w+|No violations found|correctly formatted|"
     r"no formatting errors|appears correctly formatted|correct format for|"
-    r"no citation errors|don't see any citation errors)",
+    r"no citation errors|don't see any citation errors|Corrected citation)",
     re.IGNORECASE,
 )
 
@@ -47,10 +68,24 @@ OFF_TOPIC_REDIRECT = (
     "citations and I'll check the formatting."
 )
 
+
+def _looks_like_citation(text: str) -> bool:
+    """Return True if the text contains academic-citation signals."""
+    return any(pat.search(text) for pat in CITATION_CONTEXT_PATTERNS)
+
+
 def check_safety(user_message: str) -> str | None:
-    """Pre-generation: detect distress keywords, return safety message or None."""
+    """Pre-generation: detect distress keywords, return safety message or None.
+
+    If the message looks like an academic citation or reference (e.g. a study
+    on suicide prevention), the safety gate is bypassed so the bot can review
+    the citation formatting normally.
+    """
     lower = user_message.lower()
     if any(kw in lower for kw in SAFETY_KEYWORDS):
+        # Skip the safety block when the surrounding text is clearly a citation
+        if _looks_like_citation(user_message):
+            return None
         return SAFETY_RESPONSE
     return None
 
@@ -88,10 +123,12 @@ When the user asks about margins, fonts, headers, or page layout: I specialize i
 <task>
 Review the user's text and identify violations of the citation rules in <rules>.
 For each violation, state the rule ID and quote the problematic citation.
-After each violation, provide a brief corrected example for that specific citation.
+After each violation, provide a brief explanation of what is wrong.
 If the provided citations are already compliant, respond with "No violations found."
 and a brief confirmation; do not invent or force violations.
-After all violations, give a one-sentence overall note.
+After listing all violations, provide a final "Corrected citation:" block containing the
+fully corrected version of the user's citation(s) that fixes every identified violation.
+This corrected version should be ready to copy-paste into a paper.
 When no text is provided for review, ask the user to paste their citations.
 </task>
 
@@ -99,9 +136,9 @@ When no text is provided for review, ask the user to paste their citations.
 You answer questions about citation formatting in {style_name}.
 You identify formatting errors in citations and reference lists.
 You explain why a citation violates a specific rule.
-If the user asks you to "rewrite" or "fix it for me," do not rewrite the whole passage/reference list.
-Provide only brief, line-level corrected examples tied to each specific violation.
-When the text follows all rules, you confirm it is correctly formatted.
+After identifying all violations, provide the complete corrected citation at the end
+so the user can copy-paste it directly into their paper.
+When the text follows all rules, you confirm it is correctly formatted — no corrected block needed.
 </positive_constraints>
 
 <escape_hatch>
@@ -243,10 +280,10 @@ FEW_SHOT_APA = [
         ),
         "assistant": (
             '- APA-4 (page number required): "the results were significant" '
-            'is a direct quote but lacks a page number. Corrected example: '
-            '"the results were significant" (Smith, 2020, p. XX).\n\n'
-            "One violation found. The narrative citation and the second "
-            "parenthetical citation are otherwise correctly formatted."
+            "is a direct quote but lacks a page number.\n\n"
+            "Corrected citation:\n"
+            'According to Smith (2020, p. XX), "the results were significant" and '
+            "the study confirmed earlier findings (Jones & Lee, 2019)."
         ),
     },
     {
@@ -268,13 +305,12 @@ FEW_SHOT_APA = [
         ),
         "assistant": (
             '- APA-3 (et al. for 3+ authors): "(Smith, Jones, Lee, & '
-            'Park, 2021)" — APA 7th requires "et al." from the first '
-            'citation; this citation should be in et al. form. Corrected example: '
-            '"(Smith et al., 2021)."\n'
+            'Park, 2021)" — APA 7th requires "et al." from the first citation.\n'
             '- APA-3: "Smith, Jones, Lee, and Park (2021)" in narrative — '
-            'this narrative citation should also be in et al. form. Corrected example: '
-            '"Smith et al. (2021)."\n\n'
-            "These author listings are inconsistent with APA 7th et al. usage."
+            "should also use et al. form.\n\n"
+            "Corrected citation:\n"
+            'The research (Smith et al., 2021) showed that "cognitive load theory '
+            'explains most variance." Earlier, Smith et al. (2021) had hypothesized this.'
         ),
     },
     {
@@ -283,12 +319,11 @@ FEW_SHOT_APA = [
             "Smith, J. (2020). Effects Of Sleep. journal of psychology, 105(3), 234."
         ),
         "assistant": (
-            "I cannot rewrite your full reference list, but I can fix each issue line by line.\n"
-            '- APA-R5 (title/journal capitalization): "Effects Of Sleep." should use sentence case in APA.\n'
-            '  Corrected example: "Effects of sleep."\n'
-            '- APA-R5: "journal of psychology" should be in title case (and italicized in formatted output).\n\n'
-            '  Corrected example: "Journal of Psychology".\n\n'
-            "This entry has capitalization issues under APA 7th."
+            '- APA-R5 (title capitalization): "Effects Of Sleep" should use sentence case.\n'
+            '- APA-R5 (journal capitalization): "journal of psychology" should be in title case '
+            "and italicized.\n\n"
+            "Corrected citation:\n"
+            "Smith, J. (2020). Effects of sleep. Journal of Psychology, 105(3), 234."
         ),
     },
 ]
@@ -299,11 +334,11 @@ FEW_SHOT_MLA = [
             "Smith argues that memory declines with age (Smith, 2020, p. 45)."
         ),
         "assistant": (
-            '- MLA-1 (author-page, no year): MLA uses author and page only. '
-            'Remove the year and "p." Corrected example: "(Smith 45)".\n'
-            '- MLA-3 (no comma): Do not use a comma between author and page. '
-            'Corrected example: "(Smith 45)".\n\n'
-            "In MLA, in-text citations use author and page number only."
+            '- MLA-1 (author-page, no year): MLA uses author and page only — '
+            'remove the year and "p."\n'
+            "- MLA-3 (no comma): Do not use a comma between author and page.\n\n"
+            "Corrected citation:\n"
+            "Smith argues that memory declines with age (Smith 45)."
         ),
     },
     {
@@ -322,10 +357,12 @@ FEW_SHOT_MLA = [
             "Smith wrote that \"results were positive\" (Smith, p. 12)."
         ),
         "assistant": (
-            '- MLA-3 (no comma): "(Lee, 34)" — remove the comma. Corrected example: "(Lee 34)".\n'
-            '- MLA-1 (no "p."): "(Smith, p. 12)" — MLA omits "p." in parenthetical. '
-            'Remove the page prefix. Corrected example: "(Smith 12)".\n\n'
-            "MLA in-text citations are (Author Page) with no comma or 'p.'"
+            '- MLA-3 (no comma): "(Lee, 34)" — remove the comma.\n'
+            '- MLA-1 (no "p."): "(Smith, p. 12)" — MLA omits "p." Remove the '
+            "page prefix and comma.\n\n"
+            "Corrected citation:\n"
+            "According to Lee, the effect was significant (Lee 34). "
+            'Smith wrote that "results were positive" (Smith 12).'
         ),
     },
 ]
@@ -337,11 +374,12 @@ FEW_SHOT_CHICAGO = [
             "Later work confirmed this (Jones 2019)."
         ),
         "assistant": (
-            '- CHI-1 (footnote format): Chicago Notes-Bibliography uses '
-            "superscript numbers and footnotes, not parenthetical author-date. "
-            "Corrected example: replace parenthetical citations with superscript note numbers.\n\n"
-            "Chicago NB style does not use in-text (Author Year) — that is "
-            "author-date style. Use footnotes or endnotes instead."
+            "- CHI-1 (footnote format): Chicago Notes-Bibliography uses "
+            "superscript numbers and footnotes, not parenthetical author-date.\n\n"
+            "Corrected citation:\n"
+            "The study found strong effects.¹ Later work confirmed this.²\n"
+            "¹ John Smith, [Title] ([Place]: [Publisher], 2020), 45.\n"
+            "² Jane Jones, [Title] ([Place]: [Publisher], 2019)."
         ),
     },
     {
@@ -372,9 +410,10 @@ FEW_SHOT_CHICAGO = [
         ),
         "assistant": (
             '- CHI-3 (first note format): In notes, first citations use "First Last," '
-            'so "Smith, John" should be "John Smith." Corrected example: '
-            '"John Smith, Introduction to Statistics (New York: Norton, 2020), 78."\n\n'
-            "This note uses bibliography name order instead of first-note name order."
+            'so "Smith, John" should be "John Smith."\n\n'
+            "Corrected citation:\n"
+            "The data support the hypothesis.²\n"
+            "² John Smith, Introduction to Statistics (New York: Norton, 2020), 78."
         ),
     },
 ]

@@ -1,23 +1,32 @@
-# Citation Format Checker
+# Citation Correction Bot
 
-A domain Q&A chatbot that checks citation formatting for **APA 7th**, **MLA 9th**, and **Chicago 17th (Notes and Bibliography)**. Paste a passage or reference list and the bot identifies formatting violations with rule IDs and quoted evidence — without rewriting your text.
+Paste a citation, get rule-by-rule feedback and a corrected version you can copy straight into your paper.
 
-## Topic
+## How it works
 
-Narrow domain: **citation and reference formatting** for the three major academic styles. The bot answers only questions about how citations and reference lists are formatted; it redirects off-topic requests (grammar, research quality, page layout) and includes a safety backstop for crisis language.
+1. **Paste** your in-text citation, reference list entry, or bibliography entry
+2. **Select** the style — APA 7th, MLA 9th, or Chicago 17th (Notes & Bibliography)
+3. The bot **identifies violations** with specific rule IDs (e.g. APA-4, MLA-1, CHI-B2), quotes the problematic text, and explains what's wrong
+4. A final **Corrected citation** block gives you the fixed version, ready to copy-paste
 
-## Prerequisites
+If the citation is already correct, the bot simply confirms: "No violations found."
 
-- Python 3.10+
-- [uv](https://docs.astral.sh/uv/) for running the project
-- Google Cloud with Vertex AI enabled
+## Example
 
-Create a `.env` file in this directory:
+**Input** (APA 7th):
 
-```
-VERTEXAI_PROJECT=your-project-id
-VERTEXAI_LOCATION=us-central1
-```
+> The research (Smith, Jones, Lee, & Park, 2021) showed that cognitive load matters.
+
+**Output**:
+
+> - APA-3 (et al. for 3+ authors): "(Smith, Jones, Lee, & Park, 2021)" — APA 7th requires "et al." from the first citation.
+>
+> Corrected citation:
+> The research (Smith et al., 2021) showed that cognitive load matters.
+
+## Live URL
+
+**https://citation-bot-7pj7nolpla-uc.a.run.app**
 
 ## Running locally
 
@@ -25,77 +34,43 @@ VERTEXAI_LOCATION=us-central1
 uv run python app.py
 ```
 
-Open http://localhost:8000 in your browser. Select a citation style (APA, MLA, or Chicago), paste your text, and click **Check**.
+Open http://localhost:8000, select a citation style, paste your text, and click **Check**.
 
-## API
+Requires a `.env` with Vertex AI credentials:
 
-- `GET /` — Serves the citation checker UI
-- `POST /chat` — Body: `{ "message": "...", "session_id": null, "style": "apa" }`. Returns citation review.
-- `POST /clear` — Optional `session_id` to clear that session
+```
+VERTEXAI_PROJECT=your-project-id
+VERTEXAI_LOCATION=us-central1
+```
 
-## Evaluation harness
+## Supported styles
 
-Evals use deterministic checks (rule-ID and refusal keyword detection) and Model-as-a-Judge (golden reference and rubric). Single command:
+| Style | Edition | Coverage |
+|-------|---------|----------|
+| APA | 7th | In-text citations (APA-1 through APA-7) and reference list (APA-R1 through APA-R8) |
+| MLA | 9th | In-text citations (MLA-1 through MLA-6) and Works Cited (MLA-W1 through MLA-W6) |
+| Chicago | 17th | Notes/footnotes (CHI-1 through CHI-6) and bibliography (CHI-B1 through CHI-B6) |
+
+## Evaluation
+
+The bot is evaluated with a three-tier harness:
+
+| Tier | Method | What it checks |
+|------|--------|----------------|
+| **Deterministic rules** (`test_rules.py`) | Regex/keyword matching | Rule IDs appear in responses; out-of-scope inputs get redirected; safety triggers work |
+| **Golden reference** (`test_golden.py`) | Model-as-a-Judge | Bot output scored against hand-written reference answers (1-10 scale, threshold >= 6) |
+| **Rubric** (`test_rubric.py`) | Model-as-a-Judge | Bot output scored against weighted criteria: violation ID, quoting, corrected citation, style accuracy (1-10 scale, threshold >= 5) |
+
+Run all evals:
 
 ```bash
 uv run pytest evals/ -v
 ```
 
-- **test_rules.py** — Deterministic: 10 in-domain (rule ID in response), 5 out-of-scope (redirect), 5 adversarial/safety. Prints pass rates by category.
-- **test_golden.py** — 10+ golden-reference MaaJ evals (expected answer vs bot response), threshold ≥ 6/10.
-- **test_rubric.py** — 10+ rubric MaaJ evals (weighted citation criteria), threshold ≥ 6/10.
+### Eval results
 
-Evals make live LLM calls and require network access and API credentials.
-
-## Live deployment (GCP Cloud Run)
-
-The app is deployed on Google Cloud Run and publicly accessible:
-
-- **Live URL:** https://citation-bot-7pj7nolpla-uc.a.run.app
-- **Project:** `agentic-ai-487000`
-- **Region:** `us-central1`
-- **Model:** Vertex AI `gemini-2.0-flash-lite`
-
-### Deploying from scratch
-
-1. **Authenticate and set the project:**
-
-```bash
-gcloud auth login
-gcloud config set project agentic-ai-487000
-```
-
-2. **Enable required APIs:**
-
-```bash
-gcloud services enable run.googleapis.com artifactregistry.googleapis.com aiplatform.googleapis.com cloudbuild.googleapis.com
-```
-
-3. **Deploy from source (builds the Docker image via Cloud Build):**
-
-```bash
-gcloud run deploy citation-bot --source . --region=us-central1 --allow-unauthenticated --set-env-vars="VERTEXAI_PROJECT=agentic-ai-487000,VERTEXAI_LOCATION=us-central1"
-```
-
-4. **Grant Vertex AI permissions to the Cloud Run service account:**
-
-```bash
-PROJECT_NUMBER=$(gcloud projects describe agentic-ai-487000 --format="value(projectNumber)")
-gcloud projects add-iam-policy-binding agentic-ai-487000 \
-  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
-  --role="roles/aiplatform.user"
-```
-
-### Redeploying after code changes
-
-```bash
-gcloud run deploy citation-bot --source . --region=us-central1 --project=agentic-ai-487000
-```
-
-## Repo contents
-
-- `README.md` — This file (topic, run locally, evals, live URL)
-- `pyproject.toml` — uv-based project config
-- `app.py` — FastAPI backend and citation checker logic
-- `index.html` — Simple web UI with style selector
-- `evals/` — Pytest-based eval suite (golden, rubric, deterministic rules)
+| Eval | Pass rate | Average score |
+|------|-----------|---------------|
+| Deterministic rules | 20/20 | — |
+| Golden reference (MaaJ) | 10/10 | 9.9/10 |
+| Rubric (MaaJ) | 11/11 | 9.8/10 |

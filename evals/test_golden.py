@@ -14,9 +14,11 @@ GOLDEN_EXAMPLES = [
             "the study confirmed earlier findings (Jones & Lee, 2019)."
         ),
         "reference": (
-            'APA-4 (page number required): The direct quote "the results were '
-            'significant" needs a page number — use (Smith, 2020, p. XX). '
-            "The rest is correctly formatted."
+            '- APA-4 (page number required): "the results were significant" '
+            "is a direct quote but lacks a page number.\n\n"
+            "Corrected citation:\n"
+            'According to Smith (2020, p. XX), "the results were significant" and '
+            "the study confirmed earlier findings (Jones & Lee, 2019)."
         ),
     },
     {
@@ -39,8 +41,10 @@ GOLDEN_EXAMPLES = [
             "cognitive load matters. Smith, Jones, Lee, and Park (2021) agreed."
         ),
         "reference": (
-            "APA-3: For 3+ authors use 'et al.' from the first citation — "
-            '(Smith et al., 2021) and Smith et al. (2021) in narrative.'
+            "- APA-3: For 3+ authors use 'et al.' from the first citation.\n\n"
+            "Corrected citation:\n"
+            "The research (Smith et al., 2021) showed that cognitive load matters. "
+            "Smith et al. (2021) agreed."
         ),
     },
     {
@@ -51,8 +55,10 @@ GOLDEN_EXAMPLES = [
             "Journal of applied psychology, 105(3), 234-250."
         ),
         "reference": (
-            "APA-R5: Article titles use sentence case, not title case — "
-            '"Effects of sleep." Journal names are title case and italicized.'
+            '- APA-R5: Article titles use sentence case — "Effects Of Sleep" '
+            "should be \"Effects of sleep.\" Journal names use title case.\n\n"
+            "Corrected citation:\n"
+            "Smith, J. (2020). Effects of sleep. Journal of Applied Psychology, 105(3), 234-250."
         ),
     },
     # --- MLA (3) ---
@@ -61,8 +67,10 @@ GOLDEN_EXAMPLES = [
         "style": "mla",
         "input": "Smith argues that memory declines with age (Smith, 2020, p. 45).",
         "reference": (
-            "MLA-1: MLA uses author and page only — (Smith 45). "
-            "Remove year and 'p.' MLA-3: No comma between author and page."
+            "- MLA-1: MLA uses author and page only — remove year and 'p.'\n"
+            "- MLA-3: No comma between author and page.\n\n"
+            "Corrected citation:\n"
+            "Smith argues that memory declines with age (Smith 45)."
         ),
     },
     {
@@ -79,8 +87,9 @@ GOLDEN_EXAMPLES = [
         "style": "mla",
         "input": "Works Cited: John Smith. How to Cite. Penguin, 2020.",
         "reference": (
-            "MLA-W1: Invert author name — Smith, John. "
-            "Book title italicized. Correct publisher and year format."
+            "- MLA-W1: Invert author name — should be Smith, John.\n\n"
+            "Corrected citation:\n"
+            "Smith, John. How to Cite. Penguin, 2020."
         ),
     },
     # --- Chicago (3) ---
@@ -89,8 +98,11 @@ GOLDEN_EXAMPLES = [
         "style": "chicago",
         "input": "The study found strong effects (Smith 2020, 45).",
         "reference": (
-            "CHI-1: Chicago Notes-Bibliography uses superscript numbers and "
-            "footnotes, not parenthetical (Author Year). Use footnotes instead."
+            "- CHI-1: Chicago Notes-Bibliography uses superscript numbers and "
+            "footnotes, not parenthetical (Author Year).\n\n"
+            "Corrected citation:\n"
+            "The study found strong effects.¹\n"
+            "¹ John Smith, [Title] ([Place]: [Publisher], 2020), 45."
         ),
     },
     {
@@ -113,9 +125,10 @@ GOLDEN_EXAMPLES = [
             "New York: Norton, 2020."
         ),
         "reference": (
-            "CHI-B2: In bibliography, invert the first author to Last, First — "
-            "use Smith, John. The rest of the book entry format (place, "
-            "publisher, year) is otherwise correct."
+            "- CHI-B2: In bibliography, invert the first author — use "
+            "Smith, John.\n\n"
+            "Corrected citation:\n"
+            "Smith, John. Introduction to Statistics. New York: Norton, 2020."
         ),
     },
 ]

@@ -17,9 +17,14 @@ RUBRIC = json.dumps(
             "weight": 3,
         },
         {
-            "title": "No full rewrites; brief corrections allowed",
-            "description": "Essential: response does not rewrite the full user passage/reference list, but may provide short corrected examples for specific violations.",
+            "title": "Provides a corrected citation at the end",
+            "description": "Essential: when violations are found, the response includes a final corrected version of the citation that the user can copy-paste directly.",
             "weight": 5,
+        },
+        {
+            "title": "Corrected citation is accurate",
+            "description": "Important: the corrected version actually fixes all identified violations and follows the rules of the selected style.",
+            "weight": 4,
         },
         {
             "title": "Stays within correct citation style",
@@ -33,7 +38,7 @@ RUBRIC = json.dumps(
         },
         {
             "title": "Recognizes correct formatting",
-            "description": "When the input has no citation violations, stating so clearly is correct and should receive full credit.",
+            "description": "When the input has no citation violations, stating so clearly is correct and should receive full credit. No corrected citation block needed.",
             "weight": 4,
         },
     ]
