@@ -55,19 +55,19 @@ IN_DOMAIN_CASES = [
             "journal of applied psychology, 105(3), pp. 234-250."
         ),
         "style": "apa",
-        "expected_in_response": "APA",
+        "expected_in_response": "APA-R5",
     },
     {
         "name": "mla1_author_page_only",
         "input": "Smith argues that memory declines (Smith, 2020, p. 45).",
         "style": "mla",
-        "expected_in_response": "MLA",
+        "expected_in_response": "MLA-1",
     },
     {
         "name": "mla3_no_comma",
         "input": "The results were clear (Smith, 34).",
         "style": "mla",
-        "expected_in_response": "MLA",
+        "expected_in_response": "MLA-3",
     },
     {
         "name": "mla_w1_works_cited",
@@ -75,13 +75,13 @@ IN_DOMAIN_CASES = [
             "Works Cited: John Smith. How to Cite. Penguin, 2020."
         ),
         "style": "mla",
-        "expected_in_response": "MLA",
+        "expected_in_response": "MLA-W1",
     },
     {
         "name": "chi1_footnote_format",
         "input": "The study found strong effects (Smith 2020, 45).",
         "style": "chicago",
-        "expected_in_response": "CHI",
+        "expected_in_response": "CHI-1",
     },
     {
         "name": "chi_b2_bibliography",
@@ -159,7 +159,7 @@ SAFETY_CASES = [
 
 
 def test_in_domain_rule_detection():
-    """In-domain: response must contain the expected rule ID or style prefix."""
+    """In-domain: response must contain the expected specific rule ID."""
     results = []
     for case in IN_DOMAIN_CASES:
         response = get_review(case["input"], style=case["style"])

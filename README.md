@@ -1,7 +1,7 @@
 # CiteFix
 
 **Agentic AI for Analytics — Assignment 1**
-Prof. Devon Peticolas | Arjun Varma, Oranich Jamkachornkiat
+Prof. Devon Peticolas | Arjun Varma(av3342), Oranich Jamkachornkiat(oj2191)
 
 **Live:** https://citation-bot-7pj7nolpla-uc.a.run.app
 
