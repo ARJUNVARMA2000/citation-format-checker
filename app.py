@@ -12,7 +12,7 @@ load_dotenv()
 
 # --- Config ---
 
-MODEL = "vertex_ai/gemini-2.5-flash-lite"
+MODEL = "vertex_ai/gemini-2.5-flash"
 
 # --- Safety and Backstop ---
 
