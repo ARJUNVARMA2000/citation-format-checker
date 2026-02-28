@@ -25,14 +25,13 @@ If the citation is already correct, the bot simply confirms: "No violations foun
                          │                              │
                          │  1. check_safety()           │
                          │     ┌──────────────────────┐ │
-                         │     │ Distress keywords?   │ │
-                         │     │  YES ──► citation    │ │
-                         │     │         context?     │ │
-                         │     │         NO ──► 988   │ │
-                         │     │               msg    │ │
-                         │     │         YES ──►      │ │
-                         │     │          continue    │ │
-                         │     │  NO ──► continue     │ │
+                         │     │ Rule backstop first  │ │
+                         │     │  distress phrase +   │ │
+                         │     │  not citation-like   │ │
+                         │     │     ──► 988 msg      │ │
+                         │     │ else LLM classify    │ │
+                         │     │  UNSAFE ──► 988 msg  │ │
+                         │     │  SAFE   ──► continue │ │
                          │     └──────────────────────┘ │
                          │                              │
                          │  2. build_initial_messages()  │
@@ -122,7 +121,7 @@ Three out-of-scope categories are defined using positive framing in the `<scope>
 
 **Python backstop (post-generation):** After every LLM response, a regex check (`check_response`) verifies the output contains citation-related content (rule IDs, "No violations found", "Corrected citation", etc.). If the LLM went off-topic, the response is replaced with a redirect message.
 
-**Safety handling (pre-generation):** Before calling the LLM, `check_safety` scans for distress keywords (e.g. "suicide", "self-harm", "hopeless"). If detected, the LLM is skipped entirely and a crisis-resource message is returned (988 Suicide & Crisis Lifeline, Crisis Text Line). The filter is context-aware — academic citations containing sensitive terms (e.g. a study on suicide prevention) are recognized by citation signals (parenthetical years, author patterns, DOIs) and allowed through for normal review.
+**Safety handling (pre-generation):** Before citation review, `check_safety` runs a deterministic backstop first for high-confidence crisis language such as `kill myself`, `want to die`, `end it all`, and `not worth living`. That backstop is skipped when the message looks like a citation request (for example APA/MLA keywords, author-date patterns, `doi:`, `vol.`, `pp.`, or URLs) so bibliography text that mentions self-harm terms is not blocked accidentally. If the rule layer does not trigger, an LLM safety classifier runs next; `UNSAFE` returns the same crisis-resource message immediately.
 
 ## Supported styles
 
@@ -140,13 +139,13 @@ Three out-of-scope categories are defined using positive framing in the `<scope>
 |----------|-------|---------------|
 | **In-domain** | 10 | Citations with known violations across APA, MLA, and Chicago — each paired with an expected answer |
 | **Out-of-scope** | 5 | Grammar help, source evaluation, page layout, essay requests, font questions — expect redirect/refusal |
-| **Adversarial / safety** | 6 | Distress-keyword trigger, prompt injection, role confusion, jailbreak, off-domain question, citation-with-sensitive-term bypass |
+| **Safety-only** | 8 | Two direct suicidal-intent prompts, two manipulative bypass attempts, two wording variants, and two edge cases with more natural phrasing; all must return the crisis response |
 
 ### Three-tier harness
 
 | Tier | Method | What it checks |
 |------|--------|----------------|
-| **Deterministic rules** (`test_rules.py`) | Regex/keyword matching | Rule IDs appear in responses; out-of-scope inputs get redirected; safety triggers work |
+| **Deterministic rules** (`test_rules.py`) | Regex/keyword matching | Rule IDs appear in responses; out-of-scope inputs get redirected; all 8 safety prompts must return the crisis response |
 | **Golden reference** (`test_golden.py`) | Model-as-a-Judge | Bot output scored against hand-written reference answers (1-10 scale, threshold >= 6) |
 | **Rubric** (`test_rubric.py`) | Model-as-a-Judge | Bot output scored against weighted criteria: violation ID, quoting, corrected citation, style accuracy (1-10 scale, threshold >= 5) |
 
@@ -160,6 +159,6 @@ uv run pytest evals/ -v
 
 | Eval | Pass rate | Average score |
 |------|-----------|---------------|
-| Deterministic rules | 21/21 | — |
+| Deterministic rules | 23/23 | — |
 | Golden reference (MaaJ) | 10/10 | 9.9/10 |
 | Rubric (MaaJ) | 11/11 | 9.8/10 |

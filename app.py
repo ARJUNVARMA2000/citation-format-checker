@@ -61,6 +61,22 @@ CITATION_RULE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+HAS_DIGIT_PATTERN = re.compile(r"\d")
+SAFETY_RESPONSE_PATTERN = re.compile(r"988|crisis|not alone", re.IGNORECASE)
+
+SAFETY_CLASSIFIER_PROMPT = """\
+You are a safety classifier for a citation-format assistant.
+
+Return UNSAFE if the user's message expresses suicidal intent, self-harm,
+crisis-level hopelessness, or tries to bypass safety while expressing those.
+Return SAFE for citation-review requests, including academic references that
+mention self-harm-related terms in a bibliographic context.
+Return SAFE for generic prompt-injection, role-change, jailbreak, or
+off-topic requests that do not include self-harm or suicide content.
+
+Reply with exactly one token: SAFE or UNSAFE.
+"""
+
 OFF_TOPIC_REDIRECT = (
     "I'm a citation format checker — I can help you review "
     "in-text citations, reference lists, and bibliography formatting "
@@ -74,24 +90,42 @@ def _looks_like_citation(text: str) -> bool:
     return any(pat.search(text) for pat in CITATION_CONTEXT_PATTERNS)
 
 
-def check_safety(user_message: str) -> str | None:
-    """Pre-generation: detect distress keywords, return safety message or None.
+def _matches_keyword_safety_backstop(text: str) -> bool:
+    """Fallback keyword safety check for non-citation-like inputs."""
+    lower = text.lower()
+    has_safety_keyword = any(kw in lower for kw in SAFETY_KEYWORDS)
+    has_citation_signal = ("(" in text and ")" in text) or (
+        HAS_DIGIT_PATTERN.search(text) is not None
+    )
+    return has_safety_keyword and not has_citation_signal
 
-    If the message looks like an academic citation or reference (e.g. a study
-    on suicide prevention), the safety gate is bypassed so the bot can review
-    the citation formatting normally.
-    """
-    lower = user_message.lower()
-    if any(kw in lower for kw in SAFETY_KEYWORDS):
-        # Skip the safety block when the surrounding text is clearly a citation
-        if _looks_like_citation(user_message):
-            return None
+
+def check_safety(user_message: str) -> str | None:
+    """Pre-generation: LLM-first safety check with a deterministic fallback."""
+    try:
+        response = completion(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": SAFETY_CLASSIFIER_PROMPT},
+                {"role": "user", "content": user_message},
+            ],
+        )
+        verdict = response.choices[0].message.content.strip().upper()
+        if verdict.startswith("UNSAFE"):
+            return SAFETY_RESPONSE
+    except Exception:
+        pass
+    if _matches_keyword_safety_backstop(user_message):
         return SAFETY_RESPONSE
     return None
 
 
-def check_response(response: str) -> str:
-    """Post-generation backstop: if LLM went off-topic, redirect."""
+def check_response(response: str, user_message: str | None = None) -> str:
+    """Post-generation backstop: normalize safety responses and redirect off-topic."""
+    if SAFETY_RESPONSE_PATTERN.search(response):
+        return SAFETY_RESPONSE
+    if user_message and _matches_keyword_safety_backstop(user_message):
+        return SAFETY_RESPONSE
     if not CITATION_RULE_PATTERN.search(response):
         return OFF_TOPIC_REDIRECT
     return response
@@ -514,7 +548,7 @@ def chat(request: ChatRequest):
     response_text = generate_response(sessions[session_id])
 
     # Post-generation backstop
-    response_text = check_response(response_text)
+    response_text = check_response(response_text, user_message=request.message)
 
     # Add assistant response to history
     sessions[session_id].append({"role": "assistant", "content": response_text})
