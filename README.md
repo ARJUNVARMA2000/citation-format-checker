@@ -1,5 +1,12 @@
 # Citation Correction Bot
 
+**Agentic AI for Analytics — Assignment 1**
+Prof. Devon Peticolas | Arjun Varma, Oranich Jamkachornkiat
+
+**Live:** https://citation-bot-7pj7nolpla-uc.a.run.app
+
+---
+
 Paste a citation, get rule-by-rule feedback and a corrected version you can copy straight into your paper.
 
 ## How it works
@@ -49,7 +56,7 @@ If the citation is already correct, the bot simply confirms: "No violations foun
                          │               ▼              │
                          │     ┌──────────────────────┐ │
                          │     │   LiteLLM → Gemini   │ │
-                         │     │   2.0 Flash Lite     │ │
+                         │     │   2.5 Flash Lite     │ │
                          │     └──────────┬───────────┘ │
                          │               │              │
                          │               ▼              │
@@ -82,10 +89,6 @@ If the citation is already correct, the bot simply confirms: "No violations foun
 >
 > Corrected citation:
 > The research (Smith et al., 2021) showed that cognitive load matters.
-
-## Live URL
-
-**https://citation-bot-7pj7nolpla-uc.a.run.app**
 
 ## Running locally
 
@@ -160,5 +163,5 @@ uv run pytest evals/ -v
 | Eval | Pass rate | Average score |
 |------|-----------|---------------|
 | Deterministic rules | 23/23 | — |
-| Golden reference (MaaJ) | 10/10 | 9.9/10 |
-| Rubric (MaaJ) | 11/11 | 9.8/10 |
+| Golden reference (MaaJ) | 10/10 | 9.4/10 |
+| Rubric (MaaJ) | 10/10 | 9.7/10 |

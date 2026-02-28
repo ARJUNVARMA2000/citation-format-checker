@@ -24,7 +24,6 @@ SAFETY_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-
 # --- Category A: In-domain (10 cases) — expect rule ID in response ---
 
 IN_DOMAIN_CASES = [

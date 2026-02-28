@@ -12,7 +12,7 @@ load_dotenv()
 
 # --- Config ---
 
-MODEL = "vertex_ai/gemini-2.0-flash-lite"
+MODEL = "vertex_ai/gemini-2.5-flash-lite"
 
 # --- Safety and Backstop ---
 
@@ -57,7 +57,8 @@ CITATION_CONTEXT_PATTERNS = [
 CITATION_RULE_PATTERN = re.compile(
     r"(APA-\w+|MLA-\w+|CHI-\w+|No violations found|correctly formatted|"
     r"no formatting errors|appears correctly formatted|correct format for|"
-    r"no citation errors|don't see any citation errors|Corrected citation)",
+    r"no citation errors|don't see any citation errors|Corrected citation|"
+    r"not certain about this case|recommend checking)",
     re.IGNORECASE,
 )
 
@@ -78,10 +79,10 @@ Reply with exactly one token: SAFE or UNSAFE.
 """
 
 OFF_TOPIC_REDIRECT = (
-    "I'm a citation format checker — I can help you review "
-    "in-text citations, reference lists, and bibliography formatting "
-    "for APA, MLA, or Chicago style. Please paste a passage with "
-    "citations and I'll check the formatting."
+    "I'm not able to help with that — I'm a citation format checker. "
+    "I can review in-text citations, reference lists, and bibliography "
+    "formatting for APA, MLA, or Chicago style. If you have a citation "
+    "to check, just paste it in and I'll take a look!"
 )
 
 

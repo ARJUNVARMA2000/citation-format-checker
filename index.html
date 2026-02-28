@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Citation Correction Bot</title>
+        <title>CiteFix</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
@@ -19,16 +19,13 @@
                 --ivory-deep: #efece4;
                 --cream: #fdfcf9;
                 --gold: #b8860b;
-                --gold-light: #d4a843;
-                --gold-faint: rgba(184, 134, 11, 0.08);
                 --border: #e2dfd6;
                 --border-light: #eceadf;
                 --shadow: rgba(26, 26, 46, 0.06);
-                --shadow-md: rgba(26, 26, 46, 0.1);
                 --success: #2e7d32;
                 --font-display: "Cormorant Garamond", "Georgia", serif;
                 --font-body: "DM Sans", system-ui, sans-serif;
-                --radius: 2px;
+                --radius: 1px;
             }
 
             * {
@@ -49,39 +46,41 @@
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                background-image:
-                    radial-gradient(circle at 20% 50%, rgba(184, 134, 11, 0.03) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 20%, rgba(26, 26, 46, 0.02) 0%, transparent 50%);
-                cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%231a1a2e' stroke-width='1.5'%3E%3Ccircle cx='10' cy='10' r='7'/%3E%3Cline x1='15' y1='15' x2='22' y2='22'/%3E%3C/svg%3E") 4 4, auto;
+                cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%231a1a2e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 3l4 4L7.5 20.5 2 22l1.5-5.5L17 3z'/%3E%3Cpath d='M15 5l4 4'/%3E%3C/svg%3E") 1 19, auto;
             }
 
             button, input, .example-chip, .style-btn, .copy-btn, #send-btn {
                 cursor: pointer;
             }
 
+            #user-input {
+                cursor: text;
+            }
+
             #container {
                 width: 100%;
                 max-width: 780px;
-                height: calc(100vh - 48px);
-                max-height: 800px;
+                height: 100vh;
                 display: flex;
                 flex-direction: column;
                 background: var(--cream);
-                border: 1px solid var(--border);
-                box-shadow:
-                    0 1px 3px var(--shadow),
-                    0 8px 32px var(--shadow);
-                position: relative;
+                border-left: 1px solid var(--border);
+                border-right: 1px solid var(--border);
             }
 
-            /* --- Top Bar --- */
+            /* --- Header --- */
             #top-bar {
+                display: flex;
+                flex-direction: column;
+                padding: 20px 28px 0;
+                flex-shrink: 0;
+            }
+
+            #top-bar-row {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                padding: 20px 28px 16px;
-                border-bottom: 1px solid var(--border);
-                flex-shrink: 0;
+                margin-bottom: 16px;
             }
 
             #top-bar h1 {
@@ -97,53 +96,45 @@
                 color: var(--gold);
             }
 
+            /* --- Style Tabs --- */
             .style-switcher {
                 display: flex;
                 align-items: center;
                 gap: 0;
-                border: 1px solid var(--border);
-                border-radius: var(--radius);
-                overflow: hidden;
                 flex-shrink: 0;
             }
 
             .style-btn {
-                padding: 7px 14px;
+                padding: 6px 14px;
                 font-family: var(--font-body);
-                font-size: 0.7rem;
-                font-weight: 500;
-                letter-spacing: 0.04em;
-                text-transform: uppercase;
+                font-size: 0.78rem;
+                font-weight: 400;
                 background: transparent;
                 color: var(--ink-muted);
                 border: none;
+                border-bottom: 1.5px solid transparent;
                 transition: all 0.2s ease;
                 position: relative;
             }
 
-            .style-btn:not(:last-child) {
-                border-right: 1px solid var(--border);
-            }
-
             .style-btn:hover {
                 color: var(--ink);
-                background: var(--ivory);
             }
 
             .style-btn.active {
                 color: var(--ink);
-                background: var(--ivory-deep);
                 font-weight: 500;
+                border-bottom-color: var(--gold);
             }
 
-            .style-btn.active::after {
-                content: "";
-                position: absolute;
-                bottom: 0;
-                left: 20%;
-                right: 20%;
-                height: 1.5px;
-                background: var(--gold);
+            /* --- Description --- */
+            .style-description {
+                font-size: 0.75rem;
+                color: var(--ink-muted);
+                font-style: italic;
+                padding: 10px 28px 12px;
+                border-bottom: 1px solid var(--border-light);
+                flex-shrink: 0;
             }
 
             /* --- Examples --- */
@@ -151,42 +142,29 @@
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                padding: 12px 28px;
+                padding: 10px 28px;
                 border-bottom: 1px solid var(--border-light);
                 flex-shrink: 0;
                 overflow-x: auto;
             }
 
-            .examples-label {
-                font-size: 0.68rem;
-                font-weight: 500;
-                color: var(--ink-muted);
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-
             .example-chip {
-                padding: 5px 12px;
+                padding: 4px 10px;
                 font-family: var(--font-body);
-                font-size: 0.72rem;
+                font-size: 0.7rem;
                 font-weight: 400;
-                color: var(--ink-light);
-                background: var(--ivory);
+                color: var(--ink-muted);
+                background: transparent;
                 border: 1px solid var(--border);
                 border-radius: var(--radius);
                 transition: all 0.15s ease;
                 white-space: nowrap;
                 flex-shrink: 0;
-                letter-spacing: 0;
-                text-transform: none;
             }
 
             .example-chip:hover {
-                border-color: var(--gold-light);
+                border-color: var(--ink-muted);
                 color: var(--ink);
-                background: var(--gold-faint);
             }
 
             /* --- Messages --- */
@@ -196,7 +174,7 @@
                 padding: 24px 28px;
                 display: flex;
                 flex-direction: column;
-                gap: 20px;
+                gap: 16px;
                 min-height: 0;
             }
 
@@ -218,13 +196,13 @@
                 align-items: center;
                 justify-content: center;
                 gap: 12px;
-                opacity: 0.5;
+                opacity: 0.4;
                 user-select: none;
             }
 
             .empty-state svg {
-                width: 36px;
-                height: 36px;
+                width: 32px;
+                height: 32px;
                 stroke: var(--ink-muted);
                 stroke-width: 1.2;
                 fill: none;
@@ -232,19 +210,19 @@
 
             .empty-state p {
                 font-family: var(--font-display);
-                font-size: 1.05rem;
+                font-size: 1rem;
                 font-style: italic;
                 color: var(--ink-muted);
             }
 
             .msg {
                 max-width: 88%;
-                animation: msgIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+                animation: msgIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
             }
 
             @keyframes msgIn {
-                from { opacity: 0; transform: translateY(12px) scale(0.98); }
-                to   { opacity: 1; transform: translateY(0) scale(1); }
+                from { opacity: 0; transform: translateY(8px); }
+                to   { opacity: 1; transform: translateY(0); }
             }
 
             .msg.user {
@@ -255,90 +233,64 @@
                 align-self: flex-start;
             }
 
-            .msg .role {
-                font-size: 0.62rem;
-                font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 0.08em;
-                color: var(--ink-muted);
-                margin-bottom: 5px;
-            }
-
-            .msg.user .role {
-                text-align: right;
-            }
-
             .msg .content {
-                font-size: 0.88rem;
+                font-size: 0.86rem;
                 line-height: 1.65;
                 white-space: pre-wrap;
                 word-break: break-word;
             }
 
             .msg.user .content {
-                background: var(--ink);
-                color: var(--ivory);
-                padding: 12px 16px;
+                background: var(--ivory-deep);
+                color: var(--ink);
+                padding: 10px 14px;
                 border-radius: var(--radius);
-                font-size: 0.85rem;
+                font-size: 0.84rem;
             }
 
             .msg.assistant .content {
-                background: var(--ivory);
-                border: 1px solid var(--border);
-                padding: 14px 18px;
-                border-radius: var(--radius);
-                border-left: 2.5px solid var(--gold);
+                padding: 4px 0 4px 14px;
+                border-left: 1.5px solid var(--border);
             }
 
+            /* --- Corrected block --- */
             .corrected-block {
-                margin-top: 12px;
-                padding: 14px 16px;
-                background: var(--gold-faint);
-                border: 1px solid var(--gold-light);
-                border-radius: var(--radius);
+                margin-top: 14px;
+                padding-top: 12px;
+                border-top: 1px solid var(--border-light);
             }
 
-            .corrected-block .corrected-label {
-                font-size: 0.65rem;
-                font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                color: var(--gold);
-                margin-bottom: 8px;
+            .corrected-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 6px;
             }
 
-            .corrected-block .corrected-text {
-                font-size: 0.85rem;
+            .corrected-label {
+                font-size: 0.68rem;
+                font-weight: 400;
+                color: var(--ink-muted);
+            }
+
+            .corrected-text {
+                font-size: 0.84rem;
                 line-height: 1.6;
+                font-weight: 500;
                 color: var(--ink);
                 white-space: pre-wrap;
                 word-break: break-word;
-                padding: 10px 12px;
-                background: var(--cream);
-                border: 1px solid var(--border);
-                border-radius: var(--radius);
                 user-select: all;
             }
 
             .copy-btn {
-                display: flex;
+                display: inline-flex;
                 align-items: center;
-                justify-content: center;
-                gap: 6px;
-                width: 100%;
-                margin-top: 10px;
-                padding: 8px 0;
-                font-family: var(--font-body);
-                font-size: 0.72rem;
-                font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 0.04em;
-                color: var(--ink);
-                background: var(--cream);
-                border: 1px solid var(--gold-light);
-                border-radius: var(--radius);
-                transition: all 0.15s ease;
+                padding: 2px;
+                background: none;
+                border: none;
+                color: var(--ink-muted);
+                transition: color 0.15s ease;
             }
 
             .copy-btn svg {
@@ -350,22 +302,11 @@
             }
 
             .copy-btn:hover {
-                background: var(--gold);
-                color: var(--cream);
-                border-color: var(--gold);
+                color: var(--ink);
             }
 
             .copy-btn.copied {
-                background: var(--success);
-                color: #fff;
-                border-color: var(--success);
-                animation: copyPulse 0.3s ease;
-            }
-
-            @keyframes copyPulse {
-                0%   { transform: scale(1); }
-                50%  { transform: scale(1.03); }
-                100% { transform: scale(1); }
+                color: var(--success);
             }
 
             /* --- Loading dots --- */
@@ -373,12 +314,11 @@
                 display: inline-flex;
                 align-items: center;
                 gap: 4px;
-                margin-left: 4px;
             }
 
             .loading-dots span {
-                width: 5px;
-                height: 5px;
+                width: 4px;
+                height: 4px;
                 border-radius: 50%;
                 background: var(--ink-muted);
                 display: inline-block;
@@ -390,7 +330,7 @@
 
             @keyframes bounce {
                 0%, 80%, 100% { transform: translateY(0); }
-                40% { transform: translateY(-6px); }
+                40% { transform: translateY(-5px); }
             }
 
             /* --- Input --- */
@@ -398,7 +338,7 @@
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                padding: 16px 28px 20px;
+                padding: 14px 28px 18px;
                 border-top: 1px solid var(--border);
                 flex-shrink: 0;
                 background: var(--cream);
@@ -406,7 +346,7 @@
 
             #user-input {
                 flex: 1;
-                padding: 10px 0;
+                padding: 8px 0;
                 border: none;
                 border-bottom: 1.5px solid var(--border);
                 font-family: var(--font-display);
@@ -415,92 +355,84 @@
                 outline: none;
                 background: transparent;
                 transition: border-color 0.2s ease;
-                cursor: text;
             }
 
             #user-input::placeholder {
                 color: var(--ink-muted);
                 font-style: italic;
-                opacity: 0.6;
+                opacity: 0.5;
             }
 
             #user-input:focus {
-                border-bottom-color: var(--gold);
+                border-bottom-color: var(--ink-muted);
             }
 
             #send-btn {
-                padding: 9px 22px;
-                background: var(--ink);
-                color: var(--ivory);
-                border: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 32px;
+                background: none;
+                color: var(--ink-muted);
+                border: 1px solid var(--border);
                 border-radius: var(--radius);
-                font-family: var(--font-body);
-                font-size: 0.7rem;
-                font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                transition: all 0.2s ease;
+                transition: all 0.15s ease;
                 flex-shrink: 0;
             }
 
+            #send-btn svg {
+                width: 16px;
+                height: 16px;
+                stroke: currentColor;
+                stroke-width: 2;
+                fill: none;
+            }
+
             #send-btn:hover {
-                background: var(--ink-light);
-                box-shadow: 0 2px 8px var(--shadow-md);
+                color: var(--ink);
+                border-color: var(--ink-muted);
             }
 
             #send-btn:disabled {
-                opacity: 0.25;
+                opacity: 0.2;
                 cursor: default;
-                box-shadow: none;
             }
 
             #send-btn:active:not(:disabled) {
-                transform: scale(0.97);
-            }
-
-            /* --- Footer accent --- */
-            #container::after {
-                content: "";
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                height: 2px;
-                background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
-                opacity: 0.6;
+                transform: scale(0.95);
             }
 
             /* --- Responsive --- */
             @media (max-width: 840px) {
                 #container {
                     max-width: 100%;
-                    height: 100vh;
-                    max-height: 100vh;
                     border: none;
-                    box-shadow: none;
                 }
-                #top-bar { padding: 16px 20px 14px; }
+                #top-bar { padding: 16px 20px 0; }
                 #top-bar h1 { font-size: 1.25rem; }
-                #examples-row { padding: 10px 20px; }
+                .style-description { padding: 8px 20px 10px; }
+                #examples-row { padding: 8px 20px; }
                 #messages { padding: 20px; }
-                #input-area { padding: 14px 20px 18px; }
-                .style-btn { padding: 6px 10px; font-size: 0.65rem; }
+                #input-area { padding: 12px 20px 16px; }
+                .style-btn { padding: 5px 10px; font-size: 0.72rem; }
             }
         </style>
     </head>
     <body>
         <div id="container">
             <div id="top-bar">
-                <h1>Citation<span>.</span> Corrector</h1>
-                <div class="style-switcher">
-                    <button class="style-btn active" data-style="apa">APA 7th</button>
-                    <button class="style-btn" data-style="mla">MLA 9th</button>
-                    <button class="style-btn" data-style="chicago">Chicago 17th</button>
+                <div id="top-bar-row">
+                    <h1>Cite<span>.</span>Fix</h1>
+                    <div class="style-switcher">
+                        <button class="style-btn active" data-style="apa">APA 7th</button>
+                        <button class="style-btn" data-style="mla">MLA 9th</button>
+                        <button class="style-btn" data-style="chicago">Chicago 17th</button>
+                    </div>
                 </div>
             </div>
-            <div id="examples-row">
-                <span class="examples-label">Try:</span>
-            </div>
+            <div class="style-description">Select a citation standard — paste your text below to check formatting</div>
+            <div id="examples-row"></div>
             <div id="messages">
                 <div class="empty-state">
                     <svg viewBox="0 0 24 24">
@@ -508,17 +440,19 @@
                         <path d="M8 7h6" />
                         <path d="M8 11h8" />
                     </svg>
-                    <p>Paste your citations to get corrections</p>
+                    <p>Paste a citation to check formatting</p>
                 </div>
             </div>
             <div id="input-area">
                 <input
                     type="text"
                     id="user-input"
-                    placeholder="Paste a citation or reference entry to correct..."
+                    placeholder="Paste a citation or reference entry..."
                     autocomplete="off"
                 />
-                <button id="send-btn">Check</button>
+                <button id="send-btn">
+                    <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
             </div>
         </div>
 
@@ -536,16 +470,19 @@
                     { label: "Fix missing page number", text: 'According to Smith (2020), "the results were significant" and the study confirmed earlier findings (Jones & Lee, 2019).' },
                     { label: "Fix et al. usage", text: 'The research (Smith, Jones, Lee, & Park, 2021) showed that "cognitive load theory explains most variance."' },
                     { label: "Fix reference capitalization", text: "Smith, J. (2020). Effects Of Sleep. journal of psychology, 105(3), 234." },
+                    { label: "Fix DOI format", text: "Smith, J. (2020). Effects of sleep. Journal of Psychology, 105(3), 234. doi:10.1037/abc123" },
                 ],
                 mla: [
                     { label: "Fix year & comma errors", text: "Smith argues that memory declines with age (Smith, 2020, p. 45)." },
                     { label: "Fix comma + p. errors", text: 'According to Lee, the effect was significant (Lee, 34). Smith wrote that "results were positive" (Smith, p. 12).' },
                     { label: "Fix Works Cited entry", text: "Works Cited: John Smith. How to Cite. Penguin, 2020." },
+                    { label: "Fix multi-author format", text: "Smith, Jones, and Lee argue the data supports the claim (Smith, Jones, and Lee 42)." },
                 ],
                 chicago: [
                     { label: "Fix parenthetical to footnote", text: "The study found strong effects (Smith 2020, 45). Later work confirmed this (Jones 2019)." },
                     { label: "Fix note name order", text: 'The data support the hypothesis.\u00B2 \u00B2 Smith, John. Introduction to Statistics (New York: Norton, 2020), 78.' },
                     { label: "Fix bibliography author", text: "Bibliography: John Smith. Introduction to Statistics. New York: Norton, 2020." },
+                    { label: "Fix ibid. misuse", text: "The results are clear.\u00B3 Later analysis confirmed the findings.\u2074 \u00B3 Ibid. \u2074 Smith, Statistics, 90." },
                 ],
             };
 
@@ -560,7 +497,7 @@
             });
 
             function renderExamples() {
-                examplesRow.querySelectorAll(".example-chip").forEach(el => el.remove());
+                examplesRow.innerHTML = "";
                 EXAMPLES[currentStyle].forEach(ex => {
                     const btn = document.createElement("button");
                     btn.className = "example-chip";
@@ -595,55 +532,43 @@
 
                 return escapeHtml(before) +
                     '<div class="corrected-block">' +
-                        '<div class="corrected-label">Corrected citation</div>' +
+                        '<div class="corrected-header">' +
+                            '<span class="corrected-label">Corrected</span>' +
+                            '<button class="copy-btn" onclick="copyCorrection(this)">' +
+                                '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+                            '</button>' +
+                        '</div>' +
                         '<div class="corrected-text">' + escapeHtml(after) + '</div>' +
-                        '<button class="copy-btn" onclick="copyCorrection(this)">' +
-                            '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
-                            '<span>Copy to clipboard</span>' +
-                        '</button>' +
                     '</div>';
             }
 
             function copyCorrection(btn) {
-                const text = btn.parentElement.querySelector(".corrected-text").textContent;
+                const text = btn.closest(".corrected-block").querySelector(".corrected-text").textContent;
                 navigator.clipboard.writeText(text).then(() => {
-                    btn.innerHTML =
-                        '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
-                        '<span>Copied!</span>';
+                    btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
                     btn.classList.add("copied");
                     setTimeout(() => {
-                        btn.innerHTML =
-                            '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
-                            '<span>Copy to clipboard</span>';
+                        btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
                         btn.classList.remove("copied");
-                    }, 2000);
+                    }, 1500);
                 });
             }
 
-            let msgCount = 0;
             function addMessage(role, text, isLoading = false) {
                 clearEmptyState();
-                msgCount++;
                 const div = document.createElement("div");
                 div.className =
                     "msg " +
                     (role === "you" ? "user" : "assistant") +
                     (isLoading ? " loading" : "");
-                div.style.animationDelay = (msgCount * 0.05) + "s";
                 if (isLoading) {
                     div.innerHTML =
-                        '<div class="role">Corrector</div>' +
                         '<div class="content">' +
-                            '<em>Reviewing</em>' +
                             '<span class="loading-dots"><span></span><span></span><span></span></span>' +
                         '</div>';
                 } else {
                     div.innerHTML =
-                        '<div class="role">' +
-                        (role === "you" ? "You" : "Corrector") +
-                        '</div><div class="content">' +
-                        escapeHtml(text) +
-                        "</div>";
+                        '<div class="content">' + escapeHtml(text) + '</div>';
                 }
                 messages.appendChild(div);
                 messages.scrollTop = messages.scrollHeight;
@@ -658,11 +583,7 @@
                 userInput.value = "";
                 sendBtn.disabled = true;
                 addMessage("you", text);
-                const loading = addMessage(
-                    "Citation Checker",
-                    "Reviewing",
-                    true,
-                );
+                const loading = addMessage("bot", "", true);
 
                 try {
                     const res = await fetch("/chat", {

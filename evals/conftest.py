@@ -24,7 +24,7 @@ from app import (
 
 # --- Bot (the system under test) ---
 
-JUDGE_MODEL = "vertex_ai/gemini-2.0-flash"
+JUDGE_MODEL = "vertex_ai/gemini-2.5-flash"
 
 
 def get_review(text: str, style: str = "apa") -> str:
