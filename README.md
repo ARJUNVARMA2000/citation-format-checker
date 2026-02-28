@@ -1,4 +1,4 @@
-# Citation Correction Bot
+# CiteFix
 
 **Agentic AI for Analytics — Assignment 1**
 Prof. Devon Peticolas | Arjun Varma, Oranich Jamkachornkiat
@@ -96,7 +96,7 @@ If the citation is already correct, the bot simply confirms: "No violations foun
 uv run python app.py
 ```
 
-Open http://localhost:8000, select a citation style, paste your text, and click **Check**.
+Open http://localhost:8000, select a citation style, paste your text, and submit.
 
 Requires a `.env` with Vertex AI credentials:
 
