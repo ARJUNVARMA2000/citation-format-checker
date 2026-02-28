@@ -44,91 +44,85 @@ RUBRIC = json.dumps(
     ]
 )
 
-# 10+ inputs: 3 APA, 3 MLA, 3 Chicago, 1 cross-style
+# Mirrored to the golden eval inputs so both suites cover the same scenarios.
 
 RUBRIC_INPUTS = [
-    # --- APA (3) ---
+    # --- APA (4) ---
     {
-        "name": "apa_violations",
+        "name": "apa_direct_quote_no_page",
         "style": "apa",
         "input": (
-            "Smith (2020) said \"memory declines.\" "
-            "The work (Smith and Jones, 2020) confirmed it."
+            'According to Smith (2020), "the results were significant" and '
+            "the study confirmed earlier findings (Jones & Lee, 2019)."
         ),
     },
     {
         "name": "apa_clean",
         "style": "apa",
         "input": (
-            "Smith and Jones (2020) found that sleep loss impairs memory. "
-            "Lee et al. (2018) had reported similar results."
+            "Smith and Jones (2020) found that sleep deprivation impairs "
+            "memory. This aligns with earlier work (Lee et al., 2018)."
         ),
     },
     {
-        "name": "apa_asks_rewrite",
+        "name": "apa_et_al_violation",
         "style": "apa",
         "input": (
-            "Can you rewrite this reference list for me? "
-            "Smith, J. (2020). Effects Of Sleep. journal of psychology, 105(3), 234."
+            "The research (Smith, Jones, Lee, & Park, 2021) showed that "
+            "cognitive load matters. Smith, Jones, Lee, and Park (2021) agreed."
+        ),
+    },
+    {
+        "name": "apa_reference_list_errors",
+        "style": "apa",
+        "input": (
+            "References: Smith, J. (2020). Effects Of Sleep. "
+            "Journal of applied psychology, 105(3), 234-250."
         ),
     },
     # --- MLA (3) ---
     {
-        "name": "mla_violations",
+        "name": "mla_author_page_only",
         "style": "mla",
-        "input": "Smith argues that memory declines (Smith, 2020, p. 45).",
+        "input": "Smith argues that memory declines with age (Smith, 2020, p. 45).",
     },
     {
         "name": "mla_clean",
         "style": "mla",
-        "input": "The data support the claim (Jones 22). Smith agrees (Jones 22).",
+        "input": "Recent studies confirm this (Jones 22). The data show a trend (Jones 22).",
     },
     {
-        "name": "mla_fix_this",
+        "name": "mla_works_cited_author",
         "style": "mla",
-        "input": "Fix this for me: (Smith, 34) and (Jones, 2020, p. 12).",
+        "input": "Works Cited: John Smith. How to Cite. Penguin, 2020.",
     },
     # --- Chicago (3) ---
     {
-        "name": "chicago_violations",
+        "name": "chicago_footnote_not_parenthetical",
         "style": "chicago",
-        "input": "The study found effects (Smith 2020, 45). Later (Jones 2019).",
+        "input": "The study found strong effects (Smith 2020, 45).",
     },
     {
-        "name": "chicago_clean",
-        "style": "chicago",
-        "input": "Smith argues the method was flawed.¹\n¹Smith, Research Methods, 45.",
-    },
-    {
-        "name": "chicago_mixed",
+        "name": "chicago_clean_note",
         "style": "chicago",
         "input": (
-            "Bibliography: Smith, John. Intro to Stats. New York: Norton, 2020. "
-            "Jones, Mary. Another Book. Chicago: U of Chicago P, 2019."
-        ),
-    },
-    # --- Cross-style (1) ---
-    {
-        "name": "cross_style_apa_text_mla_selected",
-        "style": "mla",
-        "input": (
-            "Smith and Jones (2020) found that sleep deprivation impairs memory. "
-            "This aligns with Lee et al. (2018)."
+            "Smith argues that the method was flawed.¹\n"
+            "¹John Smith, Research Methods (New York: Norton, 2020), 45."
         ),
     },
     {
-        "name": "apa_reference_list",
-        "style": "apa",
+        "name": "chicago_bibliography",
+        "style": "chicago",
         "input": (
-            "References:\n"
-            "Smith, J. A. (2020). Effects of sleep on memory. Journal of Applied Psychology, 105(3), 234-250."
+            "Bibliography: John Smith. Introduction to Statistics. "
+            "New York: Norton, 2020."
         ),
     },
 ]
 
 
 def test_rubric_cases():
-    """Each bot response should score >= 6/10 against the citation rubric."""
+    """Each bot response should score >= 8/10 against the citation rubric."""
     print()
     by_category = {"apa": [], "mla": [], "chicago": []}
     for case in RUBRIC_INPUTS:
@@ -141,14 +135,14 @@ def test_rubric_cases():
         cat = case["style"]
         by_category.setdefault(cat, []).append(rating)
         print(f"  {case['name']}: {rating}/10")
-        assert rating >= 5, (
+        assert rating >= 8, (
             f"[{case['name']}] Rating {rating}/10 — response: {response[:200]}"
         )
     print("\n--- Pass rates by category (rubric MaaJ) ---")
     for cat in ["apa", "mla", "chicago"]:
         ratings = by_category.get(cat, [])
         if ratings:
-            passed = sum(1 for r in ratings if r >= 5)
+            passed = sum(1 for r in ratings if r >= 8)
             print(f"  {cat}: {passed}/{len(ratings)} passed")
     total = sum(len(by_category.get(c, [])) for c in ["apa", "mla", "chicago"])
     if total:
