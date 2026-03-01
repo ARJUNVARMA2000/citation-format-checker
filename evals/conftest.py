@@ -16,10 +16,11 @@ from litellm import completion
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app import (
     MODEL,
-    SAFETY_KEYWORDS,
+    OFF_TOPIC_REDIRECT,
+    SAFETY_RESPONSE,
     build_initial_messages,
+    classify_request,
     check_response,
-    check_safety,
 )
 
 # --- Bot (the system under test) ---
@@ -30,16 +31,22 @@ JUDGE_MODEL = "vertex_ai/gemini-2.5-flash"
 def get_review(text: str, style: str = "apa") -> str:
     """Send text to the citation checker bot and return its response.
 
-    Applies the same safety check and post-generation backstop as the /chat endpoint.
+    Applies the same triage and post-generation backstop as the /chat endpoint.
     """
-    safety_msg = check_safety(text)
-    if safety_msg:
-        return safety_msg
+    triage_result = classify_request(text)
+    if triage_result == "UNSAFE":
+        return SAFETY_RESPONSE
+    if triage_result == "OUT_OF_SCOPE":
+        return OFF_TOPIC_REDIRECT
     messages = build_initial_messages(style)
     messages.append({"role": "user", "content": text})
     response = completion(model=MODEL, messages=messages)
     raw = response.choices[0].message.content
-    return check_response(raw)
+    return check_response(
+        raw,
+        user_message=text,
+        triage_failed=triage_result is None,
+    )
 
 
 # --- Judge helpers ---

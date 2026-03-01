@@ -30,15 +30,16 @@ If the citation is already correct, the bot simply confirms: "No violations foun
                          ┌──────────────────────────────┐
                          │        FastAPI (app.py)       │
                          │                              │
-                         │  1. check_safety()           │
+                         │  1. classify_request()       │
                          │     ┌──────────────────────┐ │
-                         │     │ Rule backstop first  │ │
-                         │     │  distress phrase +   │ │
-                         │     │  not citation-like   │ │
-                         │     │     ──► 988 msg      │ │
-                         │     │ else LLM classify    │ │
+                         │     │ LLM triage first     │ │
                          │     │  UNSAFE ──► 988 msg  │ │
-                         │     │  SAFE   ──► continue │ │
+                         │     │  OUT_OF_SCOPE ─►     │ │
+                         │     │     redirect         │ │
+                         │     │  CITATION ──►        │ │
+                         │     │     continue         │ │
+                         │     │  invalid ──►         │ │
+                         │     │     continue         │ │
                          │     └──────────────────────┘ │
                          │                              │
                          │  2. build_initial_messages()  │
@@ -56,17 +57,17 @@ If the citation is already correct, the bot simply confirms: "No violations foun
                          │               ▼              │
                          │     ┌──────────────────────┐ │
                          │     │   LiteLLM → Gemini   │ │
-                         │     │   2.5 Flash Lite     │ │
+                         │     │   2.5 Flash          │ │
                          │     └──────────┬───────────┘ │
                          │               │              │
                          │               ▼              │
                          │  3. check_response()         │
                          │     ┌──────────────────────┐ │
-                         │     │ Contains rule IDs /  │ │
-                         │     │ citation language?   │ │
-                         │     │  YES ──► return      │ │
-                         │     │  NO  ──► redirect    │ │
-                         │     │          message     │ │
+                         │     │ Normalize safety     │ │
+                         │     │ replies; if triage   │ │
+                         │     │ failed, run Python   │ │
+                         │     │ safety fallback on   │ │
+                         │     │ original message     │ │
                          │     └──────────────────────┘ │
                          └──────────┬───────────────────┘
                                     │ JSON response
@@ -122,9 +123,9 @@ Three out-of-scope categories are defined using positive framing in the `<scope>
 2. **Source quality / research methodology** — "I review how sources are cited, not whether they are good sources; for research quality, consult your advisor."
 3. **Page layout (margins, fonts, headers)** — "I specialize in citations and references; for page layout and formatting, check your style manual's formatting chapter."
 
-**Python backstop (post-generation):** After every LLM response, a regex check (`check_response`) verifies the output contains citation-related content (rule IDs, "No violations found", "Corrected citation", etc.). If the LLM went off-topic, the response is replaced with a redirect message.
+**Python backstop (post-generation):** `check_response` now normalizes explicit safety replies. If the first-pass triage LLM failed or returned malformed output, `check_response` also runs a Python safety-keyword fallback on the original user message and replaces the generated text with the standard crisis response when needed.
 
-**Safety handling (pre-generation):** Before citation review, `check_safety` runs a deterministic backstop first for high-confidence crisis language such as `kill myself`, `want to die`, `end it all`, and `not worth living`. That backstop is skipped when the message looks like a citation request (for example APA/MLA keywords, author-date patterns, `doi:`, `vol.`, `pp.`, or URLs) so bibliography text that mentions self-harm terms is not blocked accidentally. If the rule layer does not trigger, an LLM safety classifier runs next; `UNSAFE` returns the same crisis-resource message immediately.
+**Safety and scope handling (pre-generation):** Before citation review, `classify_request` runs a first-pass LLM triage and returns one of three labels: `UNSAFE`, `OUT_OF_SCOPE`, or `CITATION`. `UNSAFE` returns the crisis-resource message immediately, `OUT_OF_SCOPE` returns the citation-only redirect immediately, and `CITATION` continues into citation review. If triage fails, the request still proceeds, and only the post-generation Python safety fallback remains active.
 
 ## Supported styles
 

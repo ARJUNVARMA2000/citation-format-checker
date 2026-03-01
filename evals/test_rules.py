@@ -5,7 +5,6 @@ and pass rates by category.
 """
 
 import re
-
 from conftest import get_review
 
 # --- Categories ---
@@ -174,7 +173,7 @@ def test_in_domain_rule_detection():
 
 
 def test_out_of_scope_redirect():
-    """Out-of-scope: response should redirect (backstop or LLM)."""
+    """Out-of-scope: response should redirect (via triage)."""
     results = []
     for case in OUT_OF_SCOPE_CASES:
         response = get_review(case["input"], style="apa")

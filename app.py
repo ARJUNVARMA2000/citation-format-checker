@@ -16,14 +16,19 @@ MODEL = "vertex_ai/gemini-2.5-flash"
 
 # --- Safety and Backstop ---
 
+TRIAGE_LABELS = {"UNSAFE", "OUT_OF_SCOPE", "CITATION"}
+
 SAFETY_KEYWORDS = [
     "suicide",
     "self-harm",
     "kill myself",
     "end my life",
+    "end it all",
     "want to die",
     "hurt myself",
     "hopeless",
+    "not worth living",
+    "worth living anymore",
 ]
 
 SAFETY_RESPONSE = (
@@ -54,28 +59,22 @@ CITATION_CONTEXT_PATTERNS = [
     ),
 ]
 
-CITATION_RULE_PATTERN = re.compile(
-    r"(APA-\w+|MLA-\w+|CHI-\w+|No violations found|correctly formatted|"
-    r"no formatting errors|appears correctly formatted|correct format for|"
-    r"no citation errors|don't see any citation errors|Corrected citation|"
-    r"not certain about this case|recommend checking)",
-    re.IGNORECASE,
-)
-
 HAS_DIGIT_PATTERN = re.compile(r"\d")
 SAFETY_RESPONSE_PATTERN = re.compile(r"988|crisis|not alone", re.IGNORECASE)
 
-SAFETY_CLASSIFIER_PROMPT = """\
-You are a safety classifier for a citation-format assistant.
+TRIAGE_CLASSIFIER_PROMPT = """\
+You are a request triage classifier for a citation-format assistant.
 
 Return UNSAFE if the user's message expresses suicidal intent, self-harm,
 crisis-level hopelessness, or tries to bypass safety while expressing those.
-Return SAFE for citation-review requests, including academic references that
-mention self-harm-related terms in a bibliographic context.
-Return SAFE for generic prompt-injection, role-change, jailbreak, or
-off-topic requests that do not include self-harm or suicide content.
+Return OUT_OF_SCOPE for grammar help, essay writing, source-quality advice,
+formatting questions unrelated to citations (for example margins or fonts),
+or any request that is not about citation formatting.
+Return CITATION for citation-format review requests, bibliography/reference
+entries, citation-style questions, and citation-like text even when it
+mentions sensitive terms in a bibliographic context.
 
-Reply with exactly one token: SAFE or UNSAFE.
+Reply with exactly one token: UNSAFE, OUT_OF_SCOPE, or CITATION.
 """
 
 OFF_TOPIC_REDIRECT = (
@@ -92,43 +91,43 @@ def _looks_like_citation(text: str) -> bool:
 
 
 def _matches_keyword_safety_backstop(text: str) -> bool:
-    """Fallback keyword safety check for non-citation-like inputs."""
+    """Safety-only fallback when triage fails after citation generation."""
     lower = text.lower()
     has_safety_keyword = any(kw in lower for kw in SAFETY_KEYWORDS)
-    has_citation_signal = ("(" in text and ")" in text) or (
+    has_citation_signal = _looks_like_citation(text) or ("(" in text and ")" in text) or (
         HAS_DIGIT_PATTERN.search(text) is not None
     )
     return has_safety_keyword and not has_citation_signal
 
 
-def check_safety(user_message: str) -> str | None:
-    """Pre-generation: LLM-first safety check with a deterministic fallback."""
+def classify_request(user_message: str) -> str | None:
+    """Classify a request as UNSAFE, OUT_OF_SCOPE, CITATION, or None on failure."""
     try:
         response = completion(
             model=MODEL,
             messages=[
-                {"role": "system", "content": SAFETY_CLASSIFIER_PROMPT},
+                {"role": "system", "content": TRIAGE_CLASSIFIER_PROMPT},
                 {"role": "user", "content": user_message},
             ],
         )
         verdict = response.choices[0].message.content.strip().upper()
-        if verdict.startswith("UNSAFE"):
-            return SAFETY_RESPONSE
+        if verdict in TRIAGE_LABELS:
+            return verdict
     except Exception:
         pass
-    if _matches_keyword_safety_backstop(user_message):
-        return SAFETY_RESPONSE
     return None
 
 
-def check_response(response: str, user_message: str | None = None) -> str:
-    """Post-generation backstop: normalize safety responses and redirect off-topic."""
+def check_response(
+    response: str,
+    user_message: str | None = None,
+    triage_failed: bool = False,
+) -> str:
+    """Post-generation backstop: normalize safety responses and apply fallback only on triage failure."""
     if SAFETY_RESPONSE_PATTERN.search(response):
         return SAFETY_RESPONSE
-    if user_message and _matches_keyword_safety_backstop(user_message):
+    if triage_failed and user_message and _matches_keyword_safety_backstop(user_message):
         return SAFETY_RESPONSE
-    if not CITATION_RULE_PATTERN.search(response):
-        return OFF_TOPIC_REDIRECT
     return response
 
 
@@ -518,14 +517,15 @@ def index():
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
-    # Safety check — skip LLM if distress keywords detected
-    safety_msg = check_safety(request.message)
-    if safety_msg:
-        session_id = request.session_id or str(uuid.uuid4())
-        return ChatResponse(response=safety_msg, session_id=session_id)
+    session_id = request.session_id or str(uuid.uuid4())
+    triage_result = classify_request(request.message)
+    if triage_result == "UNSAFE":
+        return ChatResponse(response=SAFETY_RESPONSE, session_id=session_id)
+    if triage_result == "OUT_OF_SCOPE":
+        return ChatResponse(response=OFF_TOPIC_REDIRECT, session_id=session_id)
+    triage_failed = triage_result is None
 
     # Get or create session
-    session_id = request.session_id or str(uuid.uuid4())
     request_style = normalize_style(request.style)
     if (
         session_id not in sessions
@@ -541,7 +541,11 @@ def chat(request: ChatRequest):
     response_text = generate_response(sessions[session_id])
 
     # Post-generation backstop
-    response_text = check_response(response_text, user_message=request.message)
+    response_text = check_response(
+        response_text,
+        user_message=request.message,
+        triage_failed=triage_failed,
+    )
 
     # Add assistant response to history
     sessions[session_id].append({"role": "assistant", "content": response_text})
