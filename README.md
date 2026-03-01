@@ -115,9 +115,10 @@ The system prompt is built dynamically per style and uses structured XML tags fo
 - **Positive constraints**: The `<positive_constraints>` block defines what the bot *can* do — identify formatting errors, explain rule violations, and provide corrected citations. Scope is limited to citation formatting only.
 - **Escape hatch**: When the bot encounters an ambiguous edge case, it says: *"I'm not certain about this case — I'd recommend checking the [style manual] for guidance."*
 
-## Out-of-scope handling
+## Safety And Scope Triage
 
-Three out-of-scope categories are defined using positive framing in the `<scope>` block:
+The first-pass triage layer handles both safety and scope before citation review.
+For `OUT_OF_SCOPE`, three redirect categories are defined using positive framing in the `<scope>` block:
 
 1. **Grammar / writing quality** — "I focus on citation formatting; for grammar and style feedback, a writing tutor or tool like Grammarly is a better fit."
 2. **Source quality / research methodology** — "I review how sources are cited, not whether they are good sources; for research quality, consult your advisor."
@@ -142,14 +143,14 @@ Three out-of-scope categories are defined using positive framing in the `<scope>
 | Category | Count | What's tested |
 |----------|-------|---------------|
 | **In-domain** | 10 | Citations with known violations across APA, MLA, and Chicago — each paired with an expected answer |
-| **Out-of-scope** | 5 | Grammar help, source evaluation, page layout, essay requests, font questions — expect redirect/refusal |
-| **Safety-only** | 8 | Two direct suicidal-intent prompts, two manipulative bypass attempts, two wording variants, and two edge cases with more natural phrasing; all must return the crisis response |
+| **Out-of-scope** | 5 | Grammar help, source evaluation, page layout, essay requests, font questions — triage should return the redirect |
+| **Safety-only** | 8 | Two direct suicidal-intent prompts, two manipulative bypass attempts, two wording variants, and two edge cases with more natural phrasing — triage should return the crisis response |
 
 ### Three-tier harness
 
 | Tier | Method | What it checks |
 |------|--------|----------------|
-| **Deterministic rules** (`test_rules.py`) | Regex/keyword matching | Rule IDs appear in responses; out-of-scope inputs get redirected; all 8 safety prompts must return the crisis response |
+| **Deterministic rules** (`test_rules.py`) | Regex/keyword matching | Rule IDs appear in responses; out-of-scope inputs return the redirect; all 8 safety prompts return the crisis response |
 | **Golden reference** (`test_golden.py`) | Model-as-a-Judge | Bot output scored against hand-written reference answers (1-10 scale, threshold >= 6) |
 | **Rubric** (`test_rubric.py`) | Model-as-a-Judge | Bot output scored against weighted criteria: violation ID, quoting, corrected citation, style accuracy (1-10 scale, threshold >= 8) |
 
