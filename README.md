@@ -20,63 +20,7 @@ If the citation is already correct, the bot simply confirms: "No violations foun
 
 ## Architecture
 
-```
-                         ┌─────────────────────────────┐
-                         │      Browser (index.html)    │
-                         │  Style picker + text input   │
-                         └──────────┬──────────────────┘
-                                    │ POST /chat
-                                    ▼
-                         ┌──────────────────────────────┐
-                         │        FastAPI (app.py)       │
-                         │                              │
-                         │  1. classify_request()       │
-                         │     ┌──────────────────────┐ │
-                         │     │ LLM triage first     │ │
-                         │     │  UNSAFE ──► 988 msg  │ │
-                         │     │  OUT_OF_SCOPE ─►     │ │
-                         │     │     redirect         │ │
-                         │     │  CITATION ──►        │ │
-                         │     │     continue         │ │
-                         │     │  invalid ──►         │ │
-                         │     │     continue         │ │
-                         │     └──────────────────────┘ │
-                         │                              │
-                         │  2. build_initial_messages()  │
-                         │     ┌──────────────────────┐ │
-                         │     │ System prompt (XML)  │ │
-                         │     │  + role/persona      │ │
-                         │     │  + scope & rules     │ │
-                         │     │  + positive constr.  │ │
-                         │     │  + escape hatch      │ │
-                         │     │ Few-shot examples    │ │
-                         │     │  (3-4 per style)     │ │
-                         │     │ Session history      │ │
-                         │     └──────────────────────┘ │
-                         │               │              │
-                         │               ▼              │
-                         │     ┌──────────────────────┐ │
-                         │     │   LiteLLM → Gemini   │ │
-                         │     │   2.5 Flash          │ │
-                         │     └──────────┬───────────┘ │
-                         │               │              │
-                         │               ▼              │
-                         │  3. check_response()         │
-                         │     ┌──────────────────────┐ │
-                         │     │ Normalize safety     │ │
-                         │     │ replies; if triage   │ │
-                         │     │ failed, run Python   │ │
-                         │     │ safety fallback on   │ │
-                         │     │ original message     │ │
-                         │     └──────────────────────┘ │
-                         └──────────┬───────────────────┘
-                                    │ JSON response
-                                    ▼
-                         ┌─────────────────────────────┐
-                         │      Browser renders         │
-                         │      formatted feedback      │
-                         └─────────────────────────────┘
-```
+![CiteFix architecture diagram](diagram.png)
 
 ## Example
 
