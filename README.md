@@ -118,11 +118,6 @@ The system prompt is built dynamically per style and uses structured XML tags fo
 ## Safety And Scope Triage
 
 The first-pass triage layer handles both safety and scope before citation review.
-For `OUT_OF_SCOPE`, three redirect categories are defined using positive framing in the `<scope>` block:
-
-1. **Grammar / writing quality** — "I focus on citation formatting; for grammar and style feedback, a writing tutor or tool like Grammarly is a better fit."
-2. **Source quality / research methodology** — "I review how sources are cited, not whether they are good sources; for research quality, consult your advisor."
-3. **Page layout (margins, fonts, headers)** — "I specialize in citations and references; for page layout and formatting, check your style manual's formatting chapter."
 
 **Python backstop (post-generation):** `check_response` now normalizes explicit safety replies. If the first-pass triage LLM failed or returned malformed output, `check_response` also runs a Python safety-keyword fallback on the original user message and replaces the generated text with the standard crisis response when needed.
 
