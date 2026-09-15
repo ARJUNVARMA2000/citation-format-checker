@@ -7,6 +7,7 @@ Provides:
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -25,7 +26,7 @@ from app import (
 
 # --- Bot (the system under test) ---
 
-JUDGE_MODEL = "vertex_ai/gemini-2.5-flash"
+JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "vertex_ai/gemini-3.5-flash")
 
 
 def get_review(text: str, style: str = "apa") -> str:

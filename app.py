@@ -1,3 +1,4 @@
+import os
 import re
 import uuid
 
@@ -12,7 +13,10 @@ load_dotenv()
 
 # --- Config ---
 
-MODEL = "vertex_ai/gemini-2.5-flash"
+MODEL = os.environ.get("CITATION_MODEL", "vertex_ai/gemini-3.5-flash-lite")
+# Gemini 3.5 Flash-Lite is served through global/multi-region endpoints.
+# Explicit regional overrides remain available for other supported models.
+os.environ.setdefault("VERTEXAI_LOCATION", "global")
 
 # --- Safety and Backstop ---
 

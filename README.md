@@ -24,7 +24,7 @@ Goal: a specialized chatbot that identifies specific formatting violations in ci
 
 1. **Domain scoping** — explicit boundary (citation and reference formatting only) with redirect logic for out-of-scope queries
 2. **Rule engineering** — formatting rules for all three styles encoded with specific rule IDs for traceable violation reporting
-3. **Vertex AI integration** — Gemini 2.0 Flash Lite for fast, cost-effective responses with domain-specific prompting
+3. **Vertex AI integration** — Gemini 3.5 Flash-Lite for fast, cost-effective responses with domain-specific prompting
 4. **Comprehensive evaluation** — multi-layered eval harness: deterministic checks, golden-reference comparisons, rubric-based model-as-judge scoring
 
 ## Solution / Architecture
@@ -33,7 +33,7 @@ Goal: a specialized chatbot that identifies specific formatting violations in ci
 flowchart LR
     U[User citation] --> API[FastAPI]
     API --> DS[Domain scope check]
-    DS -->|in scope| VX[Vertex AI<br/>Gemini 2.0 Flash Lite]
+    DS -->|in scope| VX[Vertex AI<br/>Gemini 3.5 Flash-Lite]
     DS -->|out of scope| RD[Redirect response]
     VX --> RE[Rule engine<br/>APA 7 / MLA 9 / Chicago 17]
     RE --> V[Violations + rule IDs + evidence]
@@ -44,7 +44,7 @@ flowchart LR
 **Components:**
 
 - **FastAPI backend** — RESTful API with session management
-- **Vertex AI integration** — Gemini 2.0 Flash Lite with citation-domain prompts
+- **Vertex AI integration** — Gemini 3.5 Flash-Lite with citation-domain prompts
 - **Web interface** — clean UI with style selector (APA / MLA / Chicago) for paste-and-check workflow
 - **Evaluation suite** — pytest harness with three test types:
   1. Deterministic rule detection
@@ -65,25 +65,30 @@ Every violation cites a specific rule ID and quotes evidence directly from the u
 
 ## Tech Stack
 
-Python · FastAPI · Vertex AI · Gemini 2.0 Flash Lite · Google Cloud Run · Docker · pytest
+Python · FastAPI · Vertex AI · Gemini 3.5 Flash-Lite · Google Cloud Run · Docker · pytest
 
 ## Run Locally
 
 ```bash
 git clone https://github.com/ARJUNVARMA2000/citation-format-checker.git
 cd citation-format-checker
-cp .env.example .env   # add GOOGLE_APPLICATION_CREDENTIALS
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+cp .env.example .env   # set VERTEXAI_PROJECT; keep VERTEXAI_LOCATION=global
+gcloud auth application-default login
+uv sync --frozen
+uv run uvicorn app:app --reload
 # open http://localhost:8000
 ```
 
 Run evals:
 
 ```bash
-pytest tests/evals/
+uv run pytest evals/
 ```
 
 ## License
 
 MIT
+
+### Model configuration
+
+The app defaults to `vertex_ai/gemini-3.5-flash-lite`; set `CITATION_MODEL` to override it. Evaluations use `vertex_ai/gemini-3.5-flash` as the judge, overrideable with `JUDGE_MODEL`. Set `VERTEXAI_PROJECT` to your Google Cloud project and use `VERTEXAI_LOCATION=global` for these defaults. Cloud Run can remain in `us-central1`: the service region and model endpoint location are independent. Existing deployments must receive the updated environment settings when this change is deployed.
