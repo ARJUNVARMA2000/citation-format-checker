@@ -27,4 +27,4 @@ jobs:
             --region us-central1 \
             --project agentic-ai-487000 \
             --allow-unauthenticated \
-            --set-env-vars="VERTEXAI_PROJECT=agentic-ai-487000,VERTEXAI_LOCATION=us-central1"
+            --set-env-vars="VERTEXAI_PROJECT=agentic-ai-487000,VERTEXAI_LOCATION=global,CITATION_MODEL=vertex_ai/gemini-3.5-flash-lite"
